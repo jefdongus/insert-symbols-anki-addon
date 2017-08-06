@@ -80,8 +80,8 @@ var insert_symbols = new function() {
 	// Debugging:
 	//----------------------------------
 
-	//$("body").append('<div class="debug"></div>');
-	//$(".debug").html("Hi, this is a test.");
+	$("body").append('<div class="debug"></div>');
+	$(".debug").html("Hi, this is a test.");
 
 	function debugDiv(str) {
 		py.run("debug_div:"+ str);
