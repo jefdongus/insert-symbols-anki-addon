@@ -6,6 +6,7 @@ from aqt import editor
 from aqt import utils
 
 from anki.hooks import wrap
+from PyQt4 import QtGui, QtCore
 
 import sys
 import os
@@ -20,15 +21,14 @@ def load_match_string(self, match_list):
 # Setup function
 def my_setup(self, note, hide=True, focus=False):
 	if self.note:
-		# Hot-reloading for development purposes
+		# Load list of matches
 		match_str = load_match_string(self, DEFAULT_MATCHES)
 
-		cur_dir = os.getcwd()
-		idx = cur_dir.find("Anki2")
-		if idx > -1:
-			cur_dir = cur_dir[ : idx + 5]
-		with open(cur_dir + "/addons/insert_symbols/init_script.js", "r") as js_file:
-			js = js_file.read()
+		# Load JS file
+		js_file = QtCore.QFile(":/init_script")
+		if js_file.open(QtCore.QIODevice.ReadOnly | QtCore.QFile.Text):
+			js = QtCore.QTextStream(js_file).readAll()
+			js_file.close()
 			self.web.eval(js % match_str)
 
 # Bridging function
