@@ -1,8 +1,6 @@
 """ 
-Current Status:
-- Does not work if field contains tables, lists, etc.
+Current Status: Does not work if dropdown menu is clicked.
 """ 
-
 
 from aqt import editor
 from aqt import utils
@@ -12,62 +10,18 @@ from anki.hooks import wrap
 import sys
 import os
 
-""" 
-  Replacement:
-----------------------------
-Any tags that are not closed get moved to the end.
+# Creates a match string
+def load_match_string(self, match_list):
+	output = '['
+	for key, val in match_list:
+		output += '{"key":"' + key + '","val":"' + val + '"},'
+	return output[:-1] + ']'
 
-Before:	<li>aa<u>a:del</u>ta:bbb</li>
-After:	<li>aa<u>a[[delta]]</u>bbb</li>
-
-Before:	<li>aaa:del<u>ta:bb</u>b</li>
-After:	<li>aaa[[delta]]<u>bb</u>b</li>
-
-Before:	<li>h<u>i:d<b>el<i>t</i>a:asd</b></u></li>
-After:	<li>h<u>i[[delta]]<b>asd</b></u></li>
-
-Replacement occurs if the character typed (A) is the last character of a
-keyword or (B) is a whitespace character that creates a keyword immediately
-preceeding it. 
-
-In scenario A replacement occurs regardless of what character is before the 
-keyword, but in scenario B replacement only occurs if the character before the 
-keyword is whitespace or part of a formatting tag.
-
-The text to replace could be nested deep inside the DOM. For example, here only
-the line containing the list element should be replaced:
-
-<div>
-  <table style="font-size: 1em; width: 100%; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th align="left" style="width: 100%; padding: 5px;border-bottom: 2px solid #00B3FF">aaa</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td style="text-align: 100; padding: 5px;border-bottom: 1px solid #B0B0B0">
-          <ul style="margin-left: 20px; ">
-            <li>h<u>i:</u><b><u>de</u><i style="text-decoration: underline; ">l</i><u>t</u>a:asdf</b></li>
-          </ul>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-"""
-
+# Setup function
 def my_setup(self, note, hide=True, focus=False):
-	self.is_prev_text = ""
-	self.is_keypress = False
-
 	if self.note:
-		"""
-		Loads Javascript file. Originally did this so that I could hot-reload the JS file, but apparently I couldn't
-		get the eval'ed JS to update any variables or any HTML files, so the original plan of doing everything in JS
-		didn't work out. Not sure if I'm doing something wrong or just a limitation of the system.
-		"""
+		# Hot-reloading for development purposes
+		match_str = load_match_string(self, DEFAULT_MATCHES)
 
 		cur_dir = os.getcwd()
 		idx = cur_dir.find("Anki2")
@@ -75,65 +29,10 @@ def my_setup(self, note, hide=True, focus=False):
 			cur_dir = cur_dir[ : idx + 5]
 		with open(cur_dir + "/addons/insert_symbols/init_script.js", "r") as js_file:
 			js = js_file.read()
-			self.web.eval(js)
+			self.web.eval(js % match_str)
 
-		""" 
-		Pretty hacky right now. Checks if last character entered was a whitespace by comparing to keycode of SPACE and
-		ENTER, which I'm not sure if is cross-platform.
-		"""
-
-		# self.web.eval("""
-		# 	function is_OnKeypress(evt) {
-		# 		py.run("is_k");
-		# 	}
-
-		# 	function is_OnKeyup(evt) {
-		# 		if (evt.which == 13 || evt.which == 32) {
-		# 			py.run("is_w:"+ currentField.innerHTML);
-		# 		} else {
-		# 			py.run("is_c:"+ currentField.innerHTML);
-		# 		//	py.run("is_u:"+ currentField.innerHTML);
-		# 		}
-		# 	}
-
-		# 	// Using keyup event b/c that fires after the <div> is updated.
-		# 	$(".field").keypress(is_OnKeypress);
-		# 	$(".field").keyup(is_OnKeyup);
-
-		# 	/*========== Debugging Code ==========*/
-
-		# 	$("body").append('<div class="debug"></div>');
-
-		# 	function is_WriteToErr(evt) {
-		# 		if (String.fromCharCode(evt.charCode) == '`') {
-		# 			is_DebugErr($("body").html());
-		# 		}
-		# 	}
-
-		# 	function is_DebugDiv(str) {
-		# 		py.run("debug_div:"+ str);
-		# 	}
-
-		# 	function is_DebugErr(str) {
-		# 		py.run("debug_err:"+ str);
-		# 	}
-
-		# 	//is_DebugErr($("body").html())
-
-		# 	""")
-
+# Bridging function
 def my_bridge(self, str, _old=None):
-	if str.startswith("is_k"):
-		self.is_keypress = True
-	if str.startswith("is_c:"):
-		(_, value) = str.split(":", 1)
-		is_check_keyword(self, value, False)
-	if str.startswith("is_w:"):
-		(_, value) = str.split(":", 1)
-		is_check_keyword(self, value, True)
-	#if str.startswith("is_u:"):
-	#	(_, value) = str.split(":", 1)
-	#	is_update(self, value)
 	if str.startswith("debug_err"):
 		(_, value) = str.split(":", 1)
 		sys.stderr.write(value)
@@ -141,83 +40,12 @@ def my_bridge(self, str, _old=None):
 		(_, value) = str.split(":", 1)
 		self.web.eval('$(".debug").html("%s")' % value)
 
-#def is_update(self, div_text):
-#	self.web.eval('$(".debug").html("Ran is_update()")')
-#	self.is_prev_text = div_text
-
-# Scans the active <div> for the correct location to call is_match().
-def is_check_keyword(self, div_text, is_whitespace):
-
-	# Quick check to make sure that we are only running during keypresses.
-	if not self.is_keypress:
-		self.is_prev_text = div_text
-		return
-	self.is_keypress = False
-
-	# Looks for where the latest character was inserted by comparing the old and new Strings backwards, because it
-	# looked painful to get cursor position from the <div> if it contained child nodes. TODO parse forward instead
-	# so that we can parse HTML tags & special characters.
-
-	i = len(div_text) - 1
-	j = len(self.is_prev_text) - 1
-
-	while (i > 0 and j >= 0):
-		if div_text[i] != self.is_prev_text[j]:
-			if is_whitespace:
-				#sys.stderr.write('Calling is_match() with text:%s pos:%i' % (self.is_prev_text, j))
-
-				# If whitespace was inserted, then self.is_prev_text[j] should point to charater before whitespace 
-				# at point of difference. Haven't thought about whether this fails to edge cases or not yet.
-				(matched, new_text) = is_match(self, self.is_prev_text, j, is_MATCH_TBL)
-			else:
-				(matched, new_text) = is_match(self, div_text, i, is_MATCH_TBL)
-
-			if matched:
-				#self.web.eval('$(".debug").html("Matched:%s")' % new_text)
-				self.web.eval("""
-					document.execCommand("selectAll", false, null);
-					document.execCommand("insertHTML", false, "%s");
-					""" % new_text)
-				self.is_prev_text = new_text
-				return
-			else:
-				#self.web.eval('$(".debug").html("Ran check_keyword() but no match")')
-				break
-		i -= 1
-		j -= 1
-
-	self.is_prev_text = div_text
-
-# Given the position where the last character was inserted, attempt to replace the prior text with a replacement
-# from the MATCHES list.
-# MATCHES is a list of tuples of the format (TEXT_TO_REPLACE, REPLACEMENT) with the assumption that the text
-# is already escaped for HTML.
-def is_match(self, div_text, pos, matches):
-	for (key, val) in matches:
-		i = pos
-		j = len(key) - 1
-		while (i >= 0 and j >= 0):
-			if div_text[i] != key[j]:
-				#sys.stderr.write('Ending early with i=%i j=%i' % (i, j))
-				break 
-			i -= 1
-			j -= 1
-
-		# At end of either div_text or key. If key is still remaining, then there was no match.
-		if j >= 0:
-			#sys.stderr.write('Ending early with i=%i j=%i' % (i, j))
-			continue
-		else:
-			return (True, div_text[:i + 1] + val + div_text[pos + 1:])
-	return (False, None)
-
-
 editor.Editor.setNote = wrap(editor.Editor.setNote, my_setup, 'after')
 editor.Editor.bridge = wrap(editor.Editor.bridge, my_bridge, 'before')
 
 
 # Strings to replace.
-is_MATCH_TBL = [
+DEFAULT_MATCHES = [
 	# Arrows
 	('-&gt;', 		'\u2192'),
 	(':N:', 		'\u2191'),
