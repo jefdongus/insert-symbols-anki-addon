@@ -38,7 +38,7 @@ class SymbolManager(object):
 # Strings to replace.
 DEFAULT_MATCHES = [
 	# Arrows
-	('-&gt;', 		'\u2192'),
+	('->', 			'\u2192'),
 	(':N:', 		'\u2191'),
 	(':S:', 		'\u2193'),
 	(':E:', 		'\u2192'),
@@ -47,8 +47,8 @@ DEFAULT_MATCHES = [
 	# Math symbols
 	(':geq:', 		'\u2265'),
 	(':leq:', 		'\u2264'),
-	('&gt;&gt;', 	'\u226B'),
-	('&lt;&lt;',	'\u2264'),
+	('>>', 			'\u226B'),
+	('<<',			'\u226A'),
 	(':pm:', 		'\u00B1'),
 	(':infty:', 	'\u221E'),
 	(':approx:',	'\u2248'),
