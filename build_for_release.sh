@@ -20,5 +20,7 @@ for i in !($EXCLUDES); do
   cp $i $BUILD_FOLDER/$ADDON_NAME/$i
 done
 
-echo "import $ADDON_NAME.$ADDON_NAME" > $BUILD_FOLDER/$ADDON_NAME.py
+py_fname=$(echo $ADDON_NAME | tr '_' ' ' | sed 's/\b[a-z]/\u&/g')
+
+echo "import $ADDON_NAME.$ADDON_NAME" > "$BUILD_FOLDER/$py_fname.py"
 
