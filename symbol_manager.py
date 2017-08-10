@@ -6,21 +6,31 @@ class SymbolManager(object):
 
 	def __init__(self, main_window):
 		self.mw = main_window
-		self.symbols = []
+		self.symbols = None
+
+	# Turns symbols into a JSON string
+	def get_JSON(self):
+		if not self.symbols:
+			return '[]'
+		output = '['
+		for key, val in self.symbols:
+			output += '{"key":"' + key + '","val":"' + val + '"},'
+		return output[:-1] + ']'
 
 	# Initializes values from DB
 	def load_from_db(self):
-		exists = self.mw.col.db.execute("SELECT * FROM sqlite_master WHERE name='%s'" % tbl_name).fetchone()
-		if exists:
-			entries = self.mw.col.db.execute("SELECT * FROM %s" % tbl_name).fetchall()
+		#exists = self.mw.col.db.execute("SELECT * FROM sqlite_master WHERE name='%s'" % tbl_name).fetchone()
+		#if exists:
+		#	entries = self.mw.col.db.execute("SELECT * FROM %s" % tbl_name).fetchall()
 			# load entries into file
-		return
+		self.symbols = DEFAULT_MATCHES
+		return 
 
 	# Writes changes to DB
 	def save_to_db(self):
-		exists = self.mw.col.db.execute("SELECT * FROM sqlite_master WHERE name='%s'" % tbl_name).fetchone()
-		if not exists:
-			self.mw.col.db.execute("CREATE TABLE %s (Key varchar(255), Value varchar(255))" % tbl_name)
+		#exists = self.mw.col.db.execute("SELECT * FROM sqlite_master WHERE name='%s'" % tbl_name).fetchone()
+		#if not exists:
+		#	self.mw.col.db.execute("CREATE TABLE %s (Key varchar(255), Value varchar(255))" % tbl_name)
 		return
 
 	# Called when symbol list has been updated from the SymbolWindow
@@ -29,10 +39,6 @@ class SymbolManager(object):
 
 	# Called when symbol list has been reset from the SymbolWindow
 	def on_reset(self):
-		return
-
-	# Turns symbols into a JSON string
-	def to_JSON(self):
 		return
 
 # Strings to replace.
