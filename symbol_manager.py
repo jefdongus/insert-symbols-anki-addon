@@ -59,6 +59,7 @@ DEFAULT_MATCHES = [
 	(':infty:', 	'\u221E'),
 	(':approx:',	'\u2248'),
 	(':neq:', 		'\u2260'),
+	(':deg:', 		'\u00B0'),
 
 	# Fractions
 	(':1/2:', 		'\u00BD'),
