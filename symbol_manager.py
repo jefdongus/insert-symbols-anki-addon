@@ -1,45 +1,86 @@
 # TODO imports
+import aqt
+import aqt.utils
 
 TBL_NAME = 'ins_symbols'
 
+# SQLite commands
+#
+# List all tables: mw.col.db.all("select name from sqlite_master where type = 'table'")
+# Check if table exists: mw.col.db.first("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='NAME'")
+# Create table: mw.col.db.execute("create table if not exists NAME (key varchar(255), kalue varchar(255))")
+# Insert: mw.col.db.execute("insert into NAME values (?, ?)", *, *)
+# Read all: mw.col.db.all("select * from NAME")
+#
+# mw.pm.db = profiles database -- maybe better to store things in Collections still?
+
 class SymbolManager(object):
 
-	def __init__(self, main_window):
-		self.mw = main_window
-		self.symbols = None
+	def __init__(self, main_window, update_callback):
+		self._db = main_window.col.db
+		self._symbols = None
+		self._update_callback = update_callback
 
 	# Turns symbols into a JSON string
 	def get_JSON(self):
-		if not self.symbols:
+		if not self._symbols:
 			return '[]'
 		output = '['
-		for key, val in self.symbols:
+		for key, val in self._symbols:
 			output += '{"key":"' + key + '","val":"' + val + '"},'
 		return output[:-1] + ']'
 
-	# Initializes values from DB
-	def load_from_db(self):
-		#exists = self.mw.col.db.execute("SELECT * FROM sqlite_master WHERE name='%s'" % tbl_name).fetchone()
-		#if exists:
-		#	entries = self.mw.col.db.execute("SELECT * FROM %s" % tbl_name).fetchall()
-			# load entries into file
-		self.symbols = DEFAULT_MATCHES
-		return 
+	def get_copy(self):
+		return list(self._symbols)
 
-	# Writes changes to DB
-	def save_to_db(self):
-		#exists = self.mw.col.db.execute("SELECT * FROM sqlite_master WHERE name='%s'" % tbl_name).fetchone()
-		#if not exists:
-		#	self.mw.col.db.execute("CREATE TABLE %s (Key varchar(255), Value varchar(255))" % tbl_name)
-		return
+	def get_default_list(self):
+		return sorted(list(DEFAULT_MATCHES), key=lambda x: x[0])
+
+	# This should only be called by a function that performs database operations
+	def _set_symbol_list(self, new_list):
+		self._symbols = new_list
+		self._symbols.sort(key=lambda x: x[0])
+
+	def _create_db(self):
+		self._db.execute("CREATE TABLE %s (key varchar(255), value varchar(255))" % TBL_NAME)
+
+	def _load_from_db(self):
+		symbols_from_db = self._db.all("SELECT * FROM %s" % TBL_NAME)
+
+		if not symbols_from_db:
+			#aqt.utils.showInfo("Error: problem in _load_from_db()!")
+			return False
+		self._set_symbol_list(symbols_from_db)
+		return True
+
+	def _save_to_db(self):
+		self._db.execute("delete from %s" % TBL_NAME)
+		for (k, v) in self._symbols:
+			self._db.execute("INSERT INTO %s VALUES (?, ?)" % TBL_NAME, k, v)
+		self._db.commit()
+
+	# Initializes values from DB
+	def on_profile_loaded(self):
+		exists = self._db.first("SELECT * FROM sqlite_master WHERE type='table' AND name='%s'" % TBL_NAME)
+
+		if not exists:
+			# aqt.utils.showInfo("Creating new table")
+			self._create_db()
+		else:
+			# aqt.utils.showInfo("Table already exists")
+			exists = self._load_from_db()
+
+		# If database does not exist or cannot be loaded, fallback to loading default list
+		if not exists:
+			self._set_symbol_list(self.get_default_list())
+			self._save_to_db()
 
 	# Called when symbol list has been updated from the SymbolWindow
-	def on_update(self):
-		return
-
-	# Called when symbol list has been reset from the SymbolWindow
-	def on_reset(self):
-		return
+	def update_symbol_list(self, new_list):
+		# TODO validation here
+		self._set_symbol_list(new_list)
+		self._save_to_db()
+		self._update_callback()
 
 # Strings to replace.
 DEFAULT_MATCHES = [
