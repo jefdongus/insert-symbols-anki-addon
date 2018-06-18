@@ -1,4 +1,5 @@
-// Javascript code to load into insert_symbols.py
+/* Javascript code that checks whether a symbol should be inserted on each keypress.
+ * This is injected into the Anki editor's WebView by insert_symbols.py */
 
 // Namespace insert_symbols
 var insert_symbols = new function() {
@@ -7,6 +8,12 @@ var insert_symbols = new function() {
 	//----------------------------------
 	var matchList = JSON.parse('%s');
 	var isValidKeypress = false;
+
+	// Update matchList:
+	//----------------------------------
+	this.setMatchList = function(str) {
+		matchList = JSON.parse(str);
+	}
 
 	// Keypress Handling:
 	//----------------------------------
@@ -83,9 +90,9 @@ var insert_symbols = new function() {
 	//$("body").append('<div class="debug"></div>');
 	//$(".debug").html("Hi, this is a test.");
 
-	function debugDiv(str) {
-		py.run("debug_div:"+ str);
-	}
+	// function debugDiv(str) {
+	// 	py.run("debug_div:"+ str);
+	// }
 
 	function debugErr(str) {
 		py.run("debug_err:"+ str);

@@ -1,3 +1,9 @@
+# Controller for Ui_SymbolWindow. GUI that lets users to edit the symbol list.
+
+# TODO:
+# - documentation
+# - symbol display bug
+# - issues with scrolling
 
 import aqt
 

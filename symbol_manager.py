@@ -1,4 +1,8 @@
-# TODO imports
+# Acts as the central manager for symbol list. Interfaces with the SQLite database to store
+# changes to the symbol list.
+
+# TODO: Documentation
+
 import aqt
 import aqt.utils
 
@@ -27,7 +31,7 @@ class SymbolManager(object):
 			return '[]'
 		output = '['
 		for key, val in self._symbols:
-			output += '{"key":"' + key + '","val":"' + val + '"},'
+			output += '{"key":"%s","val":"%s"},' % (key, val)
 		return output[:-1] + ']'
 
 	def get_copy(self):
