@@ -1,4 +1,6 @@
-# Performs setup when the profile, main window, and editor window is loaded.
+"""
+Performs setup when the profile, main window, and editor window is loaded.
+"""
 
 import sys
 import os
