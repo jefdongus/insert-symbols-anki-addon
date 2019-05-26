@@ -207,12 +207,16 @@ class SymbolWindow(QtGui.QDialog):
 
     def accept(self):
         """ Saves changes if possible, then closes the editor. """
-        conflicts = self._sym_manager.update_symbol_list(self._working_list)
-        if conflicts:
-            err_str = "Error: The following key conflicts were detected. Changes will not be saved.\n\n"
-            for k1, k2 in conflicts:
-                err_str += "'%s' and '%s'\n" % (k1, k2)
-            aqt.utils.showInfo(err_str)
+        errors = self._sym_manager.update_and_save_symbol_list(self._working_list)
+        
+        if errors:
+            if errors[0] == SymbolManager.ERR_INVALID_FORMAT:
+                aqt.utils.showInfo(self._make_err_str_format(errors, 'Changes will not be saved', 'Row'))
+            elif errors[0] == SymbolManager.ERR_KEY_CONFLICT:
+                aqt.utils.showInfo(self._make_err_str_conflict(errors[1], 'Changes will not be saved', 'Row'))
+            else:
+                aqt.utils.showInfo("Error: Invalid key-value list to save. Changes will not be saved.")
+
         super(SymbolWindow, self).accept()
 
     def reject(self):
@@ -267,7 +271,7 @@ class SymbolWindow(QtGui.QDialog):
         new_key = self.ui.keyLineEdit.text()
         new_val = self.ui.valueLineEdit.text()
 
-        conflict_key = self._check_key_for_conflict(new_key, self._working_list)
+        conflict_key = SymbolManager.check_key_for_conflict(new_key, self._working_list)
         if conflict_key:
             aqt.utils.showInfo("Error: Cannot add '%s' as it conflicts with existing key '%s'. Please try a different name." 
                 % (new_key, conflict_key))
@@ -325,35 +329,40 @@ class SymbolWindow(QtGui.QDialog):
         will abort.
         """
         fname = QFileDialog.getOpenFileName(self, 'Open file', '', "Text (*.txt)")
-        if fname != "":
-            with io.open(fname, 'r', encoding='utf8') as file:
-                new_list = []
-                i = 1
-                for line in file:
-                    words = line.split()
-                    if not self._validate_imported_line(i, new_list, words):
-                        return
-                    new_list.append(tuple(words))
-                    i += 1
+        if not fname:
+            return
+
+        with io.open(fname, 'r', encoding='utf8') as file:
+            new_list = []
+            for line in file:
+                words = line.split()
+                new_list.append(tuple(words))
+
+            if self._validate_imported_list(new_list):
+                # Filter out empty lines before updating the list, but do so AFTER error checking so that
+                # accurate line numbers will be shown during error checking.
+                new_list = [x for x in new_list if len(x) > 0]
 
                 new_list = sorted(new_list, key=lambda x: x[0])
                 self._working_list = new_list
                 self._reload_view()
 
-    def _validate_imported_line(self, line_num, kv_list, words):
+    def _validate_imported_list(self, new_list):
         """ 
-        Checks that a line in the imported symbol .txt file is in the correct format, and that there are 
-        no conflicts between keys. 
+        Checks that the imported file is valid, and displays an error message if not. This function takes in
+        a list that DOES contain empty lines (which will be an empty list) so that accurate line numbers
+        will be displayed.
         """
-        if len(words) != 2:
-            aqt.utils.showInfo("Error in line %d: incorrect format. Expecting '<key> <value>'." % line_num)
+        errors = SymbolManager.check_format(new_list, ignore_empty=True)
+        if errors:
+            aqt.utils.showInfo(self._make_err_str_format(errors, 'Unable to import', 'Line'))
             return False
 
-        conflict_key = self._check_key_for_conflict(words[0], kv_list)
-        if conflict_key:
-            aqt.utils.showInfo("Error in line %d: '%s' conflicts with existing key '%s'. The list will not be imported." 
-                % (line_num, words[0], conflict_key))
+        errors = SymbolManager.check_for_conflicts(new_list)
+        if errors:
+            aqt.utils.showInfo(self._make_err_str_conflict(errors, 'Unable to import', 'Line'))
             return False
+
         return True
 
     def on_export_clicked(self):
@@ -368,27 +377,47 @@ class SymbolWindow(QtGui.QDialog):
             return
 
         fname = QFileDialog.getSaveFileName(self, 'Save file', '', "Text (*.txt)")
-        if fname != "":
-            with io.open(fname, 'w', encoding='utf-8') as file:
-                for k, v in self._working_list:
-                    file.write("%s\t%s\n" % (k, v))
-                aqt.utils.showInfo("Symbol list written to: " + fname)
+        if not fname:
+            return
+
+        with io.open(fname, 'w', encoding='utf-8') as file:
+            for k, v in self._working_list:
+                file.write("%s\t%s\n" % (k, v))
+            aqt.utils.showInfo("Symbol list written to: " + fname)
+
+
+    """ Error Strings """
+
+    def _make_err_str_format(self, errors, op_desc, entry_type):
+        """ 
+        Creates an error message for format errors:
+
+        @param op_desc: Which operation is being performed.
+        @param entry_type: Either 'Line' or 'Row'
+        """
+        err_str = ("Error: %s due to incorrect format in the following lines "
+            "(expecting <key> <value>).\n\n") % op_desc
+
+        for i, string in errors:
+            err_str += "%s %d: %s\n" % (entry_type, i, string)
+        return err_str
+
+    def _make_err_str_conflict(self, errors, op_desc, entry_type):
+        """ 
+        Creates an error message for key conflicts. 
+
+        @param op_desc: Which operation is being performed.
+        @param entry_type: Either 'Line' or 'Row'
+        """
+        err_str = ("Error: %s as the following key conflicts were detected. "
+            "Note that keys cannot be substrings of each other.\n\n") % op_desc
+            
+        for i, k1, k2 in errors:
+            err_str += "%s %d: '%s' and '%s'\n" % (entry_type, i, k1, k2)
+        return err_str
 
 
     """ Validation Functions """
-
-    def _check_key_for_conflict(self, new_key, kv_list):
-        """ 
-        Checks to see if the new key would conflict with any existing key-value pairs during runtime. No keys should
-        be substrings of each other. For example, a key of 'AAA' would prevent '/AAABC' from ever being used.
-
-        @param kv_list: A list of key, value pairs.
-        @return: Returns the first conflicting key, or None if no conflicts.
-        """
-        for k, v in kv_list:
-            if k in new_key or new_key in k:
-                return k
-        return None
 
     def _check_table_widget_integrity(self):
         """ Checks that the tableWidget displays the same items in the same order as the working list. """
