@@ -6,9 +6,8 @@ TODO: Resolve DB name conflicts if possible.
 """
 
 import aqt
-import aqt.utils
 
-from default_symbols import DEFAULT_MATCHES
+from .default_symbols import DEFAULT_MATCHES
 
 class SymbolManager(object):
     """ 
@@ -59,7 +58,8 @@ class SymbolManager(object):
             return '[]'
         output = '['
         for key, val in self._symbols:
-            output += '{"key":"%s","val":"%s"},' % (key, val)
+            is_special = 'true' if key.startswith(':') and key.endswith(':') else 'false'
+            output += '{"key":"%s","val":"%s","spe":%s},' % (key, val, is_special)
         return output[:-1] + ']'
 
     def get_copy(self):

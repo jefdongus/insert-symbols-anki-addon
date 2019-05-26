@@ -6,13 +6,15 @@ Controller for Ui_SymbolWindow. GUI that lets users to edit the symbol list.
 import aqt
 import io
 
-from PyQt4 import QtGui
-from PyQt4.QtGui import QTableWidgetItem, QMessageBox, QAbstractItemView, QFileDialog
+from anki import version
+from aqt.qt import *
 
-from symbol_manager import SymbolManager
-from Ui_SymbolWindow import Ui_SymbolWindow
+from .symbol_manager import SymbolManager
+from .Ui_SymbolWindow import Ui_SymbolWindow
 
-class SymbolWindow(QtGui.QDialog):
+ANKI_VER_21 = version.startswith("2.1.")
+
+class SymbolWindow(QDialog):
     """
     SymbolWindow is a controller for the symbol list editor. All edits are performed on a copy of the current
     symbol list known as the working list. The symbol list itself is owned by the SymbolManager class, and changes
@@ -250,7 +252,7 @@ class SymbolWindow(QtGui.QDialog):
         mid = 0
 
         while low <= high:
-            mid = (low + high) / 2
+            mid = int((low + high) / 2)
             k = self._working_list[mid][0]
 
             if key == k:
@@ -328,7 +330,10 @@ class SymbolWindow(QtGui.QDialog):
         each and every entry in the .txt file is valid; otherwise, an error will be displayed and the operation
         will abort.
         """
-        fname = QFileDialog.getOpenFileName(self, 'Open file', '', "Text (*.txt)")
+        if ANKI_VER_21:
+            fname, _ = QFileDialog.getOpenFileName(self, 'Open file', '', "Text (*.txt)")
+        else:
+            fname = QFileDialog.getOpenFileName(self, 'Open file', '', "Text (*.txt)")
         if not fname:
             return
 
@@ -376,7 +381,10 @@ class SymbolWindow(QtGui.QDialog):
             aqt.utils.showInfo("Please save changes first before exporting list.")
             return
 
-        fname = QFileDialog.getSaveFileName(self, 'Save file', '', "Text (*.txt)")
+        if ANKI_VER_21:
+            fname, _ = QFileDialog.getSaveFileName(self, 'Save file', '', "Text (*.txt)")
+        else:
+            fname = QFileDialog.getSaveFileName(self, 'Save file', '', "Text (*.txt)")
         if not fname:
             return
 
