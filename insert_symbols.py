@@ -1,5 +1,7 @@
 """
-Performs setup when the profile, main window, and editor window is loaded.
+This file is run when the plugin is first loaded. It contains functions to set 
+up the plugin, open the symbol list editor, and broadcast symbol list updates
+to editor windows that are open. 
 """
 
 import sys
@@ -35,28 +37,31 @@ def on_profile_loaded():
 addHook("profileLoaded", on_profile_loaded)
 
 # Add menu button
-open_action = aqt.qt.QAction("Insert Symbol Options...", mw, triggered=lambda: mw.ins_sym_window.open())
+open_action = aqt.qt.QAction("Insert Symbol Options...", mw, 
+    triggered=lambda: mw.ins_sym_window.open())
 mw.form.menuTools.addAction(open_action)
 
 
 """ 
 Editor Actions 
 
-These actions occur when an instance of the card editor defined in Anki's aqt/editor.py (ie. Add Card window 
-or Card Browser) is opened.
+These actions occur when an instance of the card editor defined in Anki's 
+aqt/editor.py (ie. Add Card window or Card Browser) is opened.
 """
 
 open_editors = []
 
 def on_editor_set_note(self, note, hide=True, focus=False):
     """
-    Anki calls Editor.setNote() when an instance of the editor should be updated. This occurs when either
-    the Add Card window or Card Browser either should show a note or is closed. NOTE will either contain the 
-    note to show or None if the editor should be closed. 
+    Anki calls Editor.setNote() when an instance of the editor should be 
+    updated. This occurs when either the Add Card window or Card Browser either 
+    should show a note or is closed. NOTE will either contain the note to show 
+    or None if the editor should be closed. 
 
-    We implement this wrapper to keep track of all the editors that are currently open so that any changes
-    to the symbol list will be pushed to all editors immediately. Since this is a wrapper to Editor.setNote(), 
-    SELF refers to the editor in aqt/editor.py.
+    We implement this wrapper to keep track of all the editors that are 
+    currently open so that any changes to the symbol list will be pushed to all
+    editors immediately. Since this is a wrapper to Editor.setNote(), SELF 
+    refers to the editor in aqt/editor.py.
     
     FYI: In Anki 2.1, focus=False becomes focusTo=None.
     """
@@ -71,33 +76,42 @@ def on_editor_set_note(self, note, hide=True, focus=False):
 
 def on_editor_load_note(self, focusTo=None):
     """ 
-    Anki calls Editor.loadNote() to refresh the editor's WebView with the fields of the note. This occurs
-    after Editor.setNote() is called, when the "Edit HTML" command is used (through Editor.onHtmlEdit()), and
-    when Editor.bridge() / Editor.onBridgeCmd() is called.
+    Anki calls Editor.loadNote() to refresh the editor's WebView with the 
+    fields of the note. This occurs after Editor.setNote() is called, when the 
+    "Edit HTML" command is used (through Editor.onHtmlEdit()), and when 
+    Editor.bridge() / Editor.onBridgeCmd() is called.
 
-    We implement this wrapper to add the Javascript code that performs symbol replacement into the WebView.
-    The code gets cleared after every call to Editor.loadNote(), so it's not enough to add the Javascript
-    during on_editor_set_note() only. Since this is a wrapper to Editor.setNote(), SELF refers to the editor 
-    in aqt/editor.py.
+    We implement this wrapper to add the Javascript code that performs symbol 
+    replacement into the WebView. The code gets cleared after every call to 
+    Editor.loadNote(), so it's not enough to add the Javascript during 
+    on_editor_set_note() only. Since this is a wrapper to Editor.setNote(), 
+    SELF refers to the editor in aqt/editor.py.
 
-    FYI: In Anki 2.1, 1) the focusTo=None argument is new and 2) there is now a hook for loadNote().
+    FYI: In Anki 2.1, 1) the focusTo=None argument is new and 2) there is now 
+    a hook for loadNote().
     """
     js_path = os.path.join(ADDON_PATH, "replacer.js")
     with open(js_path, 'r') as js_file:
         js = js_file.read()
-        self.web.eval(js % mw.ins_sym_manager.get_JSON())
+        self.web.eval(js)
+
+        json = mw.ins_sym_manager.get_JSON()
+        self.web.eval("insert_symbols.setMatchList(%s)" % json)
 
 def update_symbols():
     """
-    This function is called by SymbolManager whenever the symbol list is updated. It updates the
-    symbolList for every editor that is open.
+    This function is called by SymbolManager whenever the symbol list is 
+    updated. It updates the symbolList for every editor that is open.
     """
     for editor in open_editors:
-        editor.web.eval("insert_symbols.setMatchList(\'%s\')" % mw.ins_sym_manager.get_JSON())
+        json = mw.ins_sym_manager.get_JSON()
+        editor.web.eval("insert_symbols.setMatchList(%s)" % json)
 
 # Add wrappers:
-editor.Editor.setNote = wrap(editor.Editor.setNote, on_editor_set_note, 'after')
-editor.Editor.loadNote = wrap(editor.Editor.loadNote, on_editor_load_note, 'after')
+editor.Editor.setNote = wrap(editor.Editor.setNote, 
+    on_editor_set_note, 'after')
+editor.Editor.loadNote = wrap(editor.Editor.loadNote, 
+    on_editor_load_note, 'after')
 
 
 """ 
@@ -116,6 +130,8 @@ def on_editor_bridge(self, string, _old=None):
         self.web.eval('$(".debug").html("%s")' % value)
 
 if ANKI_VER_21:
-    editor.Editor.bridge = wrap(editor.Editor.onBridgeCmd, on_editor_bridge, 'before')
+    editor.Editor.bridge = wrap(editor.Editor.onBridgeCmd, 
+        on_editor_bridge, 'before')
 else:
-    editor.Editor.bridge = wrap(editor.Editor.bridge, on_editor_bridge, 'before')
+    editor.Editor.bridge = wrap(editor.Editor.bridge, 
+        on_editor_bridge, 'before')

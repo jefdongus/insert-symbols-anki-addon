@@ -1,19 +1,21 @@
 """
-Acts as the central manager for symbol list. Interfaces with the SQLite database to store changes to 
-the symbol list.
+This file contains SymbolManager, which keeps track of the symbol list, 
+validates new lists, and interfaces with the SQLite database.
 
-TODO: Resolve DB name conflicts if possible.
+Symbol lists are stored on a per-profile basis in the the collections database, 
+which is referenecd by mw.col.db. There is a separate profiles database that
+Anki uses to store user profiles (mw.pm.db). 
 """
 
-import aqt
+import json
 
-from .default_symbols import DEFAULT_MATCHES
+from .default_symbols import DEFAULT_MATCHES, SPECIAL_KEYS
 
 class SymbolManager(object):
     """ 
-    SymbolManager keeps track of the current symbol list and interfaces with the SQLite database. 
-
-    Symbol lists are stored per-profile.
+    SymbolManager takes in a callback function so that when the symbol list
+    is updated, each Anki editor window can be reloaded with the updated
+    symbol list.
     """
 
     TBL_NAME = 'ins_symbols'
@@ -31,20 +33,21 @@ class SymbolManager(object):
 
     def on_profile_loaded(self):
         """ 
-        Called when a new profile is loaded. First tries to load the symbol list from the database. If
-        that is not successful, loads the default symbol list instead, then saves it to the database.
+        Called when a new profile is loaded. First tries to load the symbol 
+        list from the database. If that is not successful, loads the default 
+        symbol list instead, then saves it to the database.
         """
         is_load_successful = self._check_db_exists()
 
         if not is_load_successful:
-            # aqt.utils.showInfo("Table does not exist. Creating new table.")
             self._create_db()
         else:
             code = self._load_from_db()
             is_load_successful = (code == self.SUCCESS)
 
-        # At this point, the database should have been created already. If load wasn't successful for
-        # whatever reason, use the default list and save it to the database.
+        # At this point, the database should have been created already. If load
+        # wasn't successful for whatever reason, use the default list and save 
+        # it to the database.
         if not is_load_successful:
             self._symbols = self.get_default_list()
             self._save_to_db()
@@ -53,21 +56,38 @@ class SymbolManager(object):
     """ Getters """
 
     def get_JSON(self):
-        """ Converts the symbol list into a JSON string. """
+        """ 
+        Converts the symbol list into JSON and sorts it by key length in
+        descending order. Each entry is of the format { key, val, flag }, where
+        "spe" indicates if the key is special (surrounded by ':').
+        """
         if not self._symbols:
-            return '[]'
-        output = '['
-        for key, val in self._symbols:
-            is_special = 'true' if key.startswith(':') and key.endswith(':') else 'false'
-            output += '{"key":"%s","val":"%s","spe":%s},' % (key, val, is_special)
-        return output[:-1] + ']'
+            return "'[]'"
 
-    def get_copy(self):
-        """ Returns a copy of the current symbol list. """
-        return list(self._symbols)
+        symbols = sorted(self._symbols, key=lambda x: len(x[0]), reverse=True)
+
+        output = []
+        for key, val in symbols:
+            if (key.startswith(':') and key.endswith(':') 
+                or key in SPECIAL_KEYS):
+                is_special = True
+            else:
+                is_special = False
+
+            output.append({"key": key,"val": val, "sp": is_special})
+        return json.dumps(json.dumps(output))
+
+
+    def get_list(self):
+        """
+        Returns a copy of the symbol list sorted in alphabetical order. 
+        """
+        return sorted(self._symbols, key=lambda x: x[0])
 
     def get_default_list(self):
-        """ Returns a copy of the default symbol list. """
+        """ 
+        Returns a copy of the default symbol list sorted in alphabetical order.
+        """
         return sorted(DEFAULT_MATCHES, key=lambda x: x[0])
 
 
@@ -75,31 +95,31 @@ class SymbolManager(object):
 
     def _set_symbol_list(self, new_list):
         """ 
-        Performs error-checking, then updates self._symbols. Returns None if there are no errors, or
-        otherwise returns a tuple of the format (ERROR_CODE, ERRORS) as detailed below:
+        Performs error-checking, then updates self._symbols. Returns None if 
+        there are no errors, or otherwise returns a tuple of the format 
+        (ERROR_CODE, ERRORS) as detailed below:
 
          Error Code:         Content of ERRORS:
         -------------       ----------------------
-        ERR_INVALID_FORMAT  List of indices where format of new_list is incorrect.
+        ERR_INVALID_FORMAT  List of indices where format of new_list is wrong.
         ERR_KEY_CONFLICT    List of key conflicts in new_list.
         """
         errors = SymbolManager.check_format(new_list)
         if errors:
             return (self.ERR_INVALID_FORMAT, errors)
 
-        errors = SymbolManager.check_for_conflicts(new_list)
+        errors = SymbolManager.check_for_duplicates(new_list)
         if errors:
             return (self.ERR_KEY_CONFLICT, errors)
 
         self._symbols = new_list
-        self._symbols.sort(key=lambda x: x[0])
         return None
 
     def update_and_save_symbol_list(self, new_list):
         """ 
-        Attempts to update the symbol list, and if successful saves the symbol list to database
-        and calls the callback function. Returns the same output as _set_symbol_list().
-
+        Attempts to update the symbol list, and if successful, saves the symbol 
+        list to database and calls the callback function. Returns the same 
+        output as _set_symbol_list().
         """
         errors = self._set_symbol_list(new_list)
         if not errors:
@@ -113,13 +133,15 @@ class SymbolManager(object):
     @staticmethod
     def check_format(kv_list, ignore_empty=False):
         """ 
-        Checks that the key-value list is in the correct format. Each entry must be a list/tuple of the format
-        (key, value), and the key must not be None or the empty string. This function can be set to ignore 
+        Checks that each entry is of the format (key, value), and that each key
+        is not None or the empty string. This function can be set to ignore 
         emtpy lines.
 
         @param kv_list: A list.
-        @param ignore_empty: Whether to skip empty lines (represented as an empty list)
-        @return: Returns a list of (index, line_contents), or None if no invalid lines.
+        @param ignore_empty: Whether to skip empty lines (represented as an 
+          empty list)
+        @return: Returns a list of (index, line_contents), or None if no 
+          invalid lines.
         """
         has_error = False
         errors = []
@@ -135,16 +157,28 @@ class SymbolManager(object):
         return errors if has_error else None
 
     @staticmethod
-    def check_for_conflicts(kv_list):
+    def check_if_key_duplicate(new_key, kv_list):
+        """ 
+        Checks to see if the new key would be a duplicate of any existing keys
+        in the given key-value list.
         """
-        Checks that there are no key conflicts within the key-value list. This function accepts empty lines.
+        for k, v in kv_list:
+            if new_key == k:
+                return True
+        return None
 
-        @param kv_list: A list of key-value pairs, with each entry either being a list/tuple of format
-          (key, value) or an empty list.
-        @return: Returns a list of (index, conflicting_key_A, conflicting_key_B), or None if no conflicts.
+    @staticmethod
+    def check_for_duplicates(kv_list):
         """
-        has_conflict = False
-        conflicts = []
+        Checks for duplicate keys within the key-value list and returns a list
+        of duplicate keys. This function accepts empty lines within the key-
+        value list, empty list.
+
+        @return: Returns a set of duplicate keys, or None if there are no 
+          duplicates.
+        """
+        has_duplicate = False
+        duplicates = set()
 
         for i in range(len(kv_list)):
             if len(kv_list[i]) == 0:
@@ -156,50 +190,32 @@ class SymbolManager(object):
                 k1 = kv_list[i][0]
                 k2 = kv_list[j][0]
 
-                if k1 in k2 or k2 in k1:
-                    has_conflict = True
-                    conflicts.append(tuple((i, k1, k2)))
+                if k1 == k2:
+                    has_duplicate = True
+                    duplicates.add(k1)
 
-        return conflicts if has_conflict else None
-
-    @staticmethod
-    def check_key_for_conflict(new_key, kv_list):
-        """ 
-        Checks to see if the new key would conflict with any existing key-value pairs during runtime. No keys should
-        be substrings of each other. For example, a key of 'AAA' would prevent '/AAABC' from ever being used.
-
-        @param kv_list: A list of key-value pairs in the format (key, value). 
-        @return: Returns the first conflicting key, or None if no conflicts.
-        """
-        for k, v in kv_list:
-            if k in new_key or new_key in k:
-                return k
-        return None
+        return duplicates if has_duplicate else None
 
 
     """ 
     Database Access Functions
-
-    List all tables: mw.col.db.all("select name from sqlite_master where type = 'table'")
-    Check if table exists: mw.col.db.first("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='NAME'")
-    Create table: mw.col.db.execute("create table if not exists NAME (key varchar(255), kalue varchar(255))")
-    Insert: mw.col.db.execute("insert into NAME values (?, ?)", *, *)
-    Read all: mw.col.db.all("select * from NAME")
-
-    mw.pm.db = profiles database -- maybe better to store things in Collections still? 
-
     """
 
     def _check_db_exists(self):
         """ Returns whether the symbol database exists. """
-        return self._db.first("SELECT * FROM sqlite_master WHERE type='table' AND name='%s'" % self.TBL_NAME)
+        query = "SELECT * FROM sqlite_master WHERE type='table' AND name='%s'"
+        return self._db.first(query % self.TBL_NAME)
 
     def _create_db(self):
         """ Creates a new table for the symbol list. """
-        self._db.execute("CREATE TABLE %s (key varchar(255), value varchar(255))" % self.TBL_NAME)
+        query = "CREATE TABLE %s (key varchar(255), value varchar(255))"
+        self._db.execute(query % self.TBL_NAME)
 
     def _load_from_db(self):
-        """ Attempts to load the symbol list from the database, and returns a code indicating the result. """
+        """ 
+        Attempts to load the symbol list from the database, and returns a code 
+        indicating the result. 
+        """
         symbols_from_db = self._db.all("SELECT * FROM %s" % self.TBL_NAME)
 
         if not symbols_from_db:
@@ -209,9 +225,12 @@ class SymbolManager(object):
         return errors[0] if errors else self.SUCCESS
 
     def _save_to_db(self):
-        """ Overwrites the symbol list. Currently deletes all values, then writes everything to database. """
+        """ 
+        Deletes all old values, then writes the symbol list into the database. 
+        """
         self._db.execute("delete from %s" % self.TBL_NAME)
         for (k, v) in self._symbols:
-            self._db.execute("INSERT INTO %s VALUES (?, ?)" % self.TBL_NAME, k, v)
+            query = "INSERT INTO %s VALUES (?, ?)"
+            self._db.execute(query % self.TBL_NAME, k, v)
         self._db.commit()
 

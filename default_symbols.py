@@ -1,4 +1,11 @@
-""" Default symbol list. """
+""" 
+This file contains the default symbol list as well as a list of special symbols
+which should behave like colon-delimited symbols.
+"""
+SPECIAL_KEYS = [
+    '->',
+    '<-'
+]
 
 DEFAULT_MATCHES = [
     # Arrows

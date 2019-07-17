@@ -1,13 +1,16 @@
 /*
- * Javascript code that performs symbol replacement. insert_symbols.py adds this script to 
- * each Anki editor's WebView after setting the symbol list. 
+ * Javascript code that performs symbol replacement. insert_symbols.py adds 
+ * this script to each Anki editor's WebView after setting the symbol list. 
  *
  * Anki 2.0 uses jQuery version 1.5.
  */
 
 var insert_symbols = new function() {
 
-    var matchList = JSON.parse('%s');
+    const KEY_SPACE = 32;
+    const KEY_ENTER = 13;
+
+    var matchList = undefined;
     var shouldCheckOnKeyup = false;
 
     this.setMatchList = function(str) {
@@ -17,17 +20,22 @@ var insert_symbols = new function() {
     // Keypress Handling:
     //----------------------------------
 
-    /*
-     * Note: keydown() events are fired whenever a key is pressed, including multiple times for
-     * long presses, but keyup() events are only fired ONCE when a key is released. Furthermore,
-     * window.getSelection().focusNode does not update with the new characters until the keyup()
-     * event. 
-     *
+    /**
+     * During a long press, keydown events are fired repeatedly but keyup is 
+     * not fired till the end. Thus, checkForReplacement() should be called 
+     * here to make symbol replacement be responsive.
      * 
+     * However, the newly entered character does not appear in 
+     * focusNode.textContent until later. The new character is accessible via
+     * the event object, but the WebView in Anki 2.0 doesn't support evt.key or 
+     * evt.code, so figuring out char mappings is complicated for many keys.
+     * 
+     * Thus, the compromise is to call checkForReplacement() after whitespace
+     * during keydown since those char mappings are relatively constant, but
+     * defer to keyup for everything else. It works for the most part.
      */
-
     function onKeyDown(evt) {
-        if (evt.which == 13 || evt.which == 32) {
+        if (evt.which == KEY_SPACE || evt.which == KEY_ENTER) {
             checkForReplacement(true);
         } else {
             shouldCheckOnKeyup = true;
@@ -36,8 +44,8 @@ var insert_symbols = new function() {
 
     function onKeyUp(evt) {
         if (shouldCheckOnKeyup) {
-            checkForReplacement();
             shouldCheckOnKeyup = false;
+            checkForReplacement(false);
         }
     }
 
@@ -48,46 +56,61 @@ var insert_symbols = new function() {
     //----------------------------------
 
     /**
-     * Checks whether the current text should be replaced by a symbol from the symbol list.
-     * For simplicity, this function only looks at text within the current Node.
+     * Checks whether the current text should be replaced by a symbol from the 
+     * symbol list. For simplicity, this function only looks at text within the 
+     * current Node.
      */
     function checkForReplacement(isWhitespacePressed) {
         var sel = window.getSelection();
         if (sel.isCollapsed) {
             var text = sel.focusNode.textContent;
             var cursorPos = sel.focusOffset;
-            //debugErr(sel.focusNode.textContent + '\n' + sel.focusOffset);
+            //debugDiv(sel.focusNode.textContent);
 
             var result = matchesKeyword(text, cursorPos, isWhitespacePressed);
             if (result.val !== null) {
-                performReplacement(sel.focusNode, cursorPos - result.keylen, cursorPos, result.val);
+                performReplacement(sel.focusNode, cursorPos - result.keylen, 
+                    cursorPos, result.val);
             }
         }
     }
 
     /**
-     * Checks whether TEXT.substring(0, LEN) ends with any keys in the symbol list, and if so, returns the match.
+     * Checks whether the substring of TEXT up to END_INDEX matches any keys
+     * from the match list. For non-special characters (ie. not colon-delimited
+     * and not certain arrows), matching should only occur if both: 
+     * - when a whitespace key (space or enter) was pressed.
+     * - when the character before the match is a whitespace.
+     * See the README for more information.
      *
      * @param text A string containing the substring to check.
-     * @param len The length of the substring.
-     * @return An object where VAL is value of the matched key-value pair (or null if no match), and KEYLEN is the 
-     *   length of the key in the matched key-value pair.
+     * @param endIndex The length of the substring.
+     * @return An object where VAL is value of the matched key-value pair 
+     *   (or null if no match), and KEYLEN is the length of the key in the 
+     *   matched key-value pair.
      */
-    function matchesKeyword(text, len, isWhitespacePressed) {
-        //debugErr("In MK, text:" + text + " substring len: " + len);
-
+    function matchesKeyword(text, endIndex, isWhitespacePressed) {
         for (var i = 0, k; i < matchList.length; i++) {
-            if (!matchList[i].spe && !isWhitespacePressed) {
+            notSpecial = !matchList[i].sp;
+
+            // If indicated, skip entries that trigger only when whitespace is
+            // inputted:
+            if (notSpecial && !isWhitespacePressed) {
                 continue;
             }
 
             key = matchList[i].key;
-            var startIndex = len - key.length;
+            var startIndex = endIndex - key.length;
 
-            //debugErr("In MK, text:" + text + " key:" + key + " lenChk:" + (len >= key.length) + "" + );
+            // Check if there is a match:
+            if (text.substring(startIndex, endIndex) === key) {
 
-            if (startIndex >= 0 && text.substring(startIndex, len) === key) {
-                //debugErr("In MK, text:" + matchList[i].val + " len: " + key.length);
+                // If indicated, check if char before match is whitespace:
+                if (notSpecial && startIndex > 0 
+                    && !/\s/.test(text[startIndex - 1])) {
+                    continue;
+                }
+
                 return {"val":matchList[i].val, "keylen":key.length};
             }
         }
@@ -100,7 +123,8 @@ var insert_symbols = new function() {
      * 
      * @param node The node to perform replacement on.
      * @param rangeStart The start index of the range.
-     * @param rangeEnd The end index of the range (should be 1 + the index of the last character to be deleted). 
+     * @param rangeEnd The end index of the range (should be 1 + the index of 
+     *   the last character to be deleted). 
      * @param newText Replacement text.
      */
     function performReplacement(node, rangeStart, rangeEnd, newText) {
@@ -119,6 +143,10 @@ var insert_symbols = new function() {
 
     // $("body").append('<div class="debug"></div>');
     // $(".debug").html("Hi, this is a test.");
+
+    // function printMatchStr() {
+    //     debugErr(mlStr);
+    // }
 
     // function debugDiv(str) {
     //     py.run("debug_div:"+ str);
