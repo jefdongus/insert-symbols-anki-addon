@@ -6,6 +6,7 @@ to editor windows that are open.
 
 import sys
 import os
+import aqt
 
 from anki import version
 from anki.hooks import addHook, wrap
