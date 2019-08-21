@@ -26,7 +26,7 @@
    <bool>false</bool>
   </property>
   <property name="windowTitle">
-   <string>Insert symbol options</string>
+   <string>Insert Symbol Options</string>
   </property>
   <property name="autoFillBackground">
    <bool>false</bool>
@@ -108,11 +108,23 @@
           <property name="enabled">
            <bool>true</bool>
           </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::WheelFocus</enum>
+          </property>
           <property name="frameShadow">
            <enum>QFrame::Plain</enum>
           </property>
           <property name="midLineWidth">
            <number>0</number>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
           </property>
           <property name="editTriggers">
            <set>QAbstractItemView::NoEditTriggers</set>
@@ -130,7 +142,7 @@
            <bool>true</bool>
           </property>
           <property name="selectionMode">
-           <enum>QAbstractItemView::NoSelection</enum>
+           <enum>QAbstractItemView::SingleSelection</enum>
           </property>
           <property name="selectionBehavior">
            <enum>QAbstractItemView::SelectRows</enum>

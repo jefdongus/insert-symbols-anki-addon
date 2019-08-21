@@ -128,31 +128,35 @@ var insert_symbols = new function() {
      * @param newText Replacement text.
      */
     function performReplacement(node, rangeStart, rangeEnd, newText) {
+        // Perform replacement:
         var range = document.createRange();
         range.setStart(node, rangeStart);
         range.setEnd(node, rangeEnd);
-
+        range.deleteContents();
+        node.textContent += newText;
+        
+        // Set cursor position to end of node:
+        range.setStart(node, node.textContent.length);
+        range.collapse(true);
         var sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
-        document.execCommand("insertHTML", false, newText);
     }
 
     // Debugging:
     //----------------------------------
 
-    // $("body").append('<div class="debug"></div>');
-    // $(".debug").html("Hi, this is a test.");
+    // $("body").append('<div class="debug1"></div>');
+    // $("body").append('<div class="debug2"></div>');
 
-    // function printMatchStr() {
-    //     debugErr(mlStr);
+    // $(".debug1").html("Debug #1");
+    // $(".debug2").html("Debug #2");
+
+    // function debugDiv1(str) {
+    //     $(".debug1").html(str);
     // }
 
-    // function debugDiv(str) {
-    //     py.run("debug_div:"+ str);
-    // }
-
-    // function debugErr(str) {
-    //     py.run("debug_err:"+ str);
+    // function debugDiv2(str) {
+    //     $(".debug2").html(str);
     // }
 }

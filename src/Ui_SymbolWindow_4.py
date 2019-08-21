@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'Ui_SymbolWindow.ui'
+# Form implementation generated from reading ui file 'src/Ui_SymbolWindow.ui'
 #
 # Created by: PyQt4 UI code generator 4.11.4
 #
@@ -66,14 +66,21 @@ class Ui_SymbolWindow(object):
         self.gridLayout_2.addWidget(self.labelReplace, 0, 1, 1, 1)
         self.tableWidget = QtGui.QTableWidget(self.verticalLayoutWidget)
         self.tableWidget.setEnabled(True)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.tableWidget.sizePolicy().hasHeightForWidth())
+        self.tableWidget.setSizePolicy(sizePolicy)
+        self.tableWidget.setFocusPolicy(QtCore.Qt.WheelFocus)
         self.tableWidget.setFrameShadow(QtGui.QFrame.Plain)
         self.tableWidget.setMidLineWidth(0)
+        self.tableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.tableWidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.tableWidget.setTabKeyNavigation(False)
         self.tableWidget.setProperty("showDropIndicator", False)
         self.tableWidget.setDragDropOverwriteMode(False)
         self.tableWidget.setAlternatingRowColors(True)
-        self.tableWidget.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
+        self.tableWidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.tableWidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.tableWidget.setTextElideMode(QtCore.Qt.ElideRight)
         self.tableWidget.setShowGrid(True)
@@ -152,7 +159,7 @@ class Ui_SymbolWindow(object):
         QtCore.QMetaObject.connectSlotsByName(SymbolWindow)
 
     def retranslateUi(self, SymbolWindow):
-        SymbolWindow.setWindowTitle(_translate("SymbolWindow", "Insert symbol options", None))
+        SymbolWindow.setWindowTitle(_translate("SymbolWindow", "Insert Symbol Options", None))
         self.labelWith.setText(_translate("SymbolWindow", "With", None))
         self.labelReplace.setText(_translate("SymbolWindow", "Replace", None))
         __sortingEnabled = self.tableWidget.isSortingEnabled()
