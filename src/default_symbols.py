@@ -2,6 +2,9 @@
 This file contains the default symbol list as well as a list of special symbols
 which should behave like colon-delimited symbols.
 """
+import itertools
+from collections import OrderedDict
+
 SPECIAL_KEYS = [
     '->',
     '<-',
@@ -9,8 +12,9 @@ SPECIAL_KEYS = [
     '<=',
 ]
 
-DEFAULT_MATCHES = [
-    # Arrows
+""" Symbols Key-Value Pair Definitions """
+
+_ARROWS = [
     ('->',          u'\u2192'),
     ('=>',          u'\u21D2'),
     ('<-',          u'\u2190'),
@@ -23,16 +27,18 @@ DEFAULT_MATCHES = [
     (':E2:',        u'\u21D2'),
     (':W:',         u'\u2190'),
     (':W2:',        u'\u21D0'),
+]
 
-    # Typography:
+_TYPOGRAPHY = [
     ('--',          u'\u2012'),
     ('---',         u'\u2014'),
     (':dagger:',    u'\u2020'),
     (':ddagger:',   u'\u2021'),
     (':section:',   u'\u00A7'),
     (':paragraph:', u'\u00B6'),
+]
 
-    # Math general:
+_MATH_GEN = [
     (':infty:',     u'\u221E'),
     (':deg:',       u'\u00B0'),
     (':permil:',    u'\u2030'),
@@ -41,15 +47,17 @@ DEFAULT_MATCHES = [
     (':4thrt:',     u'\u221C'),
     (':angle:',     u'\u2220'),
     (':hbar:',      u'\u210F'),
+]
 
-    # Math binary operators:
+_MATH_BINARY = [
     (':pm:',        u'\u00B1'),
     (':mp:',        u'\u2213'),
     (':dot:',       u'\u00B7'),
     (':times:',     u'\u00D7'),
     (':div:',       u'\u00F7'),
+]
 
-    # Math relation symbols:
+_MATH_RELATION = [
     (':approx:',    u'\u2248'),
     (':equiv:',     u'\u2261'),
     (':propto:',    u'\u221D'),
@@ -58,8 +66,9 @@ DEFAULT_MATCHES = [
     (':leq:',       u'\u2264'),
     (':>>:',        u'\u226B'),
     (':<<:',        u'\u226A'),
+]
 
-    # Math set symbols:
+_MATH_SETS = [
     (':subset:',    u'\u2282'),
     (':subseteq:',  u'\u2286'),
     (':supset:',    u'\u2283'),
@@ -69,21 +78,24 @@ DEFAULT_MATCHES = [
     (':cap:',       u'\u2229'),
     (':cup:',       u'\u222A'),
     (':emptyset:',  u'\u2205'),
+]
 
-    # Math logical symbols:
+_MATH_LOGIC = [
     (':neg:',       u'\u00AC'),
     (':vee:',       u'\u2228'),
     (':wedge:',     u'\u2227'),
     (':forall:',    u'\u2200'),
     (':exists:',    u'\u2203'),
     (':therefore:', u'\u2234'),
+]
 
-    # Math calculus:
+_MATH_CALCULUS = [
     (':nabla:',     u'\u2207'),
     (':partial:',   u'\u2202'),
     (':integral:',  u'\u222B'),
+]
 
-    # Fractions:
+_FRACTIONS = [
     (':1/2:',       u'\u00BD'),
     (':1/3:',       u'\u2153'),
     (':2/3:',       u'\u2154'),
@@ -102,8 +114,9 @@ DEFAULT_MATCHES = [
     (':7/8:',       u'\u215E'),
     (':1/9:',       u'\u2151'),
     (':1/10:',      u'\u2152'),
+]
 
-    # Greek letters (lowercase):
+_GREEK_LOWER = [
     (':alpha:',     u'\u03B1'),
     (':beta:',      u'\u03B2'),
     (':gamma:',     u'\u03B3'),
@@ -128,8 +141,9 @@ DEFAULT_MATCHES = [
     (':chi:',       u'\u03C7'),
     (':psi:',       u'\u03C8'),
     (':omega:',     u'\u03C9'),
+]
 
-    # Greek letters (uppercase):
+_GREEK_UPPER = [
     (':Alpha:',     u'\u0391'),
     (':Beta:',      u'\u0392'),
     (':Gamma:',     u'\u0393'),
@@ -154,8 +168,9 @@ DEFAULT_MATCHES = [
     (':Chi:',       u'\u03A7'),
     (':Psi:',       u'\u03A8'),
     (':Omega:',     u'\u03A9'),
+]
 
-    # Currency:
+_CURRENCY = [
     (':cent:',      u'\u00A2'),
     (':pound:',     u'\u00A3'),
     (':euro:',      u'\u20AC'),
@@ -167,3 +182,23 @@ DEFAULT_MATCHES = [
     (':yen:',       u'\u00A5'),
     (':yuan:',      u'\u00A5'),
 ]
+
+
+""" Create Index of Keys and Default List """
+
+_SYMBOL_DICT = OrderedDict([
+    ("Arrows", _ARROWS),
+    ("Typography", _TYPOGRAPHY),
+    ("Math (General)", _MATH_GEN),
+    ("Math (Binary Operators)", _MATH_BINARY),
+    ("Math (Relational)", _MATH_RELATION),
+    ("Math (Sets)", _MATH_SETS),
+    ("Math (Logical)", _MATH_LOGIC),
+    ("Math (Calculus)", _MATH_CALCULUS),
+    ("Fractions", _FRACTIONS),
+    ("Greek Symbols (Lowercase)", _GREEK_LOWER),
+    ("Greek Symbols (Uppercase)", _GREEK_UPPER),
+    ("Currency", _CURRENCY),
+])
+
+DEFAULT_MATCHES = list(itertools.chain.from_iterable(_SYMBOL_DICT.values()))
