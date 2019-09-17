@@ -119,7 +119,8 @@ var insert_symbols = new function() {
     }
 
     /**
-     * Replaces the text in the given node with new text.
+     * Replaces the text in the given node with new text. Assumes that the node
+     * is of type TEXT_NODE.
      * 
      * @param node The node to perform replacement on.
      * @param rangeStart The start index of the range.
@@ -128,15 +129,18 @@ var insert_symbols = new function() {
      * @param newText Replacement text.
      */
     function performReplacement(node, rangeStart, rangeEnd, newText) {
-        // Perform replacement:
+        // Delete old text:
         var range = document.createRange();
         range.setStart(node, rangeStart);
         range.setEnd(node, rangeEnd);
         range.deleteContents();
-        node.textContent += newText;
+
+        // Insert new text:
+        node.textContent = node.textContent.substring(0, rangeStart) + newText 
+            + node.textContent.substring(rangeStart);
         
-        // Set cursor position to end of node:
-        range.setStart(node, node.textContent.length);
+        // Set cursor position to end of inserted text:
+        range.setStart(node, rangeStart + newText.length);
         range.collapse(true);
         var sel = window.getSelection();
         sel.removeAllRanges();
