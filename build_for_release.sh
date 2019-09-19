@@ -5,9 +5,7 @@ ADDON_NAME=insert_symbols
 SRC_FOLDER=src
 BUILD_FOLDER=build
 
-CONDA_ENV_NAME=pyqt4
-
-EXCLUDES=".|..|*.ui|Ui_SymbolWindow*.py"
+EXCLUDES=".|..|*.ui|Ui_SymbolWindow*.py|__pycache__"
 
 if [ -d $BUILD_FOLDER ]; then
   rm -rf $BUILD_FOLDER/*
