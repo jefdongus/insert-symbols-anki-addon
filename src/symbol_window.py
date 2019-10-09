@@ -57,19 +57,33 @@ class SymbolWindow(QDialog):
         self.ui.valueLineEdit.returnPressed.connect(self.on_kv_return_pressed)
 
         self.ui.tableWidget.cellClicked.connect(self.on_cell_clicked)
+        h_header = self.ui.tableWidget.horizontalHeader()
+        if ANKI_VER_21:
+            h_header.setSectionResizeMode(0, QHeaderView.Stretch)
+            h_header.setSectionResizeMode(1, QHeaderView.Stretch)
+        else:
+            h_header.setResizeMode(0, QHeaderView.Stretch)
+            h_header.setResizeMode(1, QHeaderView.Stretch)
 
 
     """ Editor State Getters """
+
+    def _get_key_text(self):
+        return self.ui.keyLineEdit.text().strip()
+
+    def _get_val_text(self):
+        return self.ui.valueLineEdit.text().strip()
 
     def is_row_selected(self):
         """ Returns true if a row in the tableWidget is selected. """
         return self._selected_row >= 0
 
     def is_key_valid(self):
-        return bool(self.ui.keyLineEdit.text())
+        text = self._get_key_text()
+        return bool(text) and SymbolManager.check_if_key_valid(text)
 
     def is_val_valid(self):
-        return bool(self.ui.valueLineEdit.text())
+        return bool(self._get_val_text())
 
     def is_val_different(self):
         """ 
@@ -79,7 +93,7 @@ class SymbolWindow(QDialog):
         if not self.is_row_selected(): 
             return False
         old = self._working_list[self._selected_row][1]
-        new = self.ui.valueLineEdit.text()
+        new = self._get_val_text()
         return old != new
 
 
@@ -164,6 +178,7 @@ class SymbolWindow(QDialog):
         Called when the text in keyLineEdit is changed. First scrolls the 
         tableWidget, then updates add/replace and delete buttons.
         """
+        current_text = current_text.strip()
         found, idx = self._find_prospective_index(current_text)
         self._scroll_to_index(idx)
 
@@ -325,8 +340,8 @@ class SymbolWindow(QDialog):
                 "already selected.")
             return
 
-        new_key = self.ui.keyLineEdit.text()
-        new_val = self.ui.valueLineEdit.text()
+        new_key = self._get_key_text()
+        new_val = self._get_val_text()
 
         has_conflict = SymbolManager.check_if_key_duplicate(new_key, 
             self._working_list)
@@ -350,7 +365,7 @@ class SymbolWindow(QDialog):
                 "row is selected.")
             return
 
-        new_val = self.ui.valueLineEdit.text()
+        new_val = self._get_val_text()
         old_pair = self._working_list[self._selected_row]
 
         self._working_list[self._selected_row] = (old_pair[0], new_val)
@@ -403,8 +418,8 @@ class SymbolWindow(QDialog):
         with io.open(fname, 'r', encoding='utf8') as file:
             new_list = []
             for line in file:
-                words = line.split()
-                new_list.append(tuple(words))
+                words = line.strip().split(None, 1)
+                new_list.append(words)
 
             if self._validate_imported_list(new_list):
                 # Filter out empty lines before updating the list, but do so 

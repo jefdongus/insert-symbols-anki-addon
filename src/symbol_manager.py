@@ -8,6 +8,7 @@ Anki uses to store user profiles (mw.pm.db).
 """
 
 import sys
+import string
 import json
 
 from .default_symbols import DEFAULT_MATCHES, SPECIAL_KEYS
@@ -154,8 +155,13 @@ class SymbolManager(object):
             if len(item) != 2 or not item[0]:
                 has_error = True
                 err_str = ' '.join(map(str, item))
-                errors.append(tuple((i, err_str)))
+                errors.append(tuple((i + 1, err_str)))
         return errors if has_error else None
+
+    @staticmethod
+    def check_if_key_valid(key):
+        """ Checks whether key is a valid standalone key. """
+        return not True in [c in key for c in string.whitespace]
 
     @staticmethod
     def check_if_key_duplicate(new_key, kv_list):
