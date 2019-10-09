@@ -1,0 +1,21 @@
+:hiri:	ぁ
+:o:		Ω
+:star:	★
+"_"		*_*
+
+pre		c
+prefix	asdfjkl;
+
+suffix  ddd
+fix		d
+
+same	text
+value	text
+
+d		multi word values
+s1          spacing-1
+       s2  spacing-2
+	   
+'hi'	aaaaaaa
+hi		< >
+HI		:aaa:

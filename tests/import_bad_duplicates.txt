@@ -1,0 +1,12 @@
+a	val_1
+b	val_2
+
+b	val_3
+
+bb	val_4
+c	val_5
+
+c	val_6
+d 	val_7
+
+duplicates should-be-b-and-c

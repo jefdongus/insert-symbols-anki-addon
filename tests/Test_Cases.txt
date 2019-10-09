@@ -1,0 +1,32 @@
+Below are a checklist of tests to perform:
+
+  Text Areas:
+------------------------------
+1) Test that symbols can be added to the end of a block of text.
+2) Test that symbols can be added to the middle of a block of text.
+3) Test that replacement occurs for arrows and colon-delimited keys as soon as the last character is typed.
+4) Test that for other characters, replacement only occurs if the character before the key is a whitespace AND that a whitespace character is pressed.
+
+
+  Options Window UI:
+------------------------------
+1) Test that typing keys auto-scrolls the ScrollView.
+2) Test that keys with spaces are NOT valid.
+3) Test that values with spaces are valid.
+4) Test that valid K-V pairs can be added, and that changes are seen in the textarea.
+5) Test that leading/trailing whitespace are trimmed.
+6) Test that clicking on a ScrollView row updates the key/value fields.
+7) Test that editing the value of an existing K-V pair changes the button to "Replace".
+8) Test that editing the key of an existing K-V pair changes the button to "Add".
+9) Test that if a key is invalid or if a value does not exist, the Add/Replace button is grayed out.
+10) Test that an existing K-V pair can be updated, and that changes are seen in the textarea.
+11) Test that an existing K-V pair can be deleted, and that changes are seen in the textarea.
+
+
+  Import / Export:
+------------------------------
+1) Test that importing "import_good_data.txt" works.
+2) Test that importing "import_bad_missingvals.txt" and "import_bad_duplicates.txt" fails.
+3) Load "import_good_data.txt" and check that the exported file matches "export_good_data_reference.txt".
+4) Test that resetting the symbol list works.
+5) Test that symbols are saved to database after closing Anki.
