@@ -1,4 +1,4 @@
-# Insert Symbols As You Type
+# Symbols As You Type
 
 This Anki plugin lets you quickly insert Unicode symbols into cards by typing a predefined key sequence.
 
