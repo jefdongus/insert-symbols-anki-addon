@@ -25,25 +25,6 @@ if ANKI_VER_21:
 else:
     ADDON_PATH = os.path.dirname(__file__).decode(SYS_ENCODING)
 
-""" 
-Profile Loading Actions 
-
-These actions occur when a new profile is opened.
-"""
-
-def on_profile_loaded():
-    """ Perform setup when a new profile is loaded. """
-    mw.ins_sym_manager = SymbolManager(mw, update_symbols)
-    mw.ins_sym_window = SymbolWindow(mw, mw.ins_sym_manager)
-    mw.ins_sym_manager.on_profile_loaded()
-
-addHook("profileLoaded", on_profile_loaded)
-
-# Add menu button
-open_action = aqt.qt.QAction("Insert Symbol Options...", mw, 
-    triggered=lambda: mw.ins_sym_window.open())
-mw.form.menuTools.addAction(open_action)
-
 
 """ 
 Editor Actions 
@@ -110,12 +91,33 @@ def update_symbols():
         json = mw.ins_sym_manager.get_JSON()
         editor.web.eval("insert_symbols.setMatchList(%s)" % json)
 
-# Add wrappers:
-editor.Editor.setNote = wrap(editor.Editor.setNote, 
-    on_editor_set_note, 'after')
-editor.Editor.loadNote = wrap(editor.Editor.loadNote, 
-    on_editor_load_note, 'after')
 
+""" 
+Profile Loading Actions 
+
+These actions occur when a new profile is opened.
+"""
+
+def on_profile_loaded():
+    """ Perform setup when a new profile is loaded. """
+    mw.ins_sym_manager = SymbolManager(mw, update_symbols)
+    mw.ins_sym_window = SymbolWindow(mw, mw.ins_sym_manager)
+    mw.ins_sym_manager.on_profile_loaded()
+
+    # Add editor wrappers here so that if other plugins modify Editor.loadNote
+    # this function will still work. There IS a hook for loadNote in Anki 2.1, 
+    # but it doesn't exist in 2.0, so will keep using wrap() for consistency:
+    editor.Editor.setNote = wrap(editor.Editor.setNote, 
+        on_editor_set_note, 'after')
+    editor.Editor.loadNote = wrap(editor.Editor.loadNote, 
+        on_editor_load_note, 'after')
+
+addHook("profileLoaded", on_profile_loaded)
+
+# Add menu button
+open_action = aqt.qt.QAction("Insert Symbol Options...", mw, 
+    triggered=lambda: mw.ins_sym_window.open())
+mw.form.menuTools.addAction(open_action)
 
 """ 
 Debugging Functions 
