@@ -34,7 +34,7 @@ var insert_symbols = new function() {
      * during keydown since those char mappings are relatively constant, but
      * defer to keyup for everything else. It works for the most part.
      */
-    function onKeyDown(evt) {
+    this.onKeyDown = function(evt) {
         if (evt.which == KEY_SPACE || evt.which == KEY_ENTER) {
             checkForReplacement(true);
         } else {
@@ -42,15 +42,29 @@ var insert_symbols = new function() {
         }
     }
 
-    function onKeyUp(evt) {
+    this.onKeyUp = function(evt) {
         if (shouldCheckOnKeyup) {
             shouldCheckOnKeyup = false;
             checkForReplacement(false);
         }
     }
 
-    $(".field").keydown(onKeyDown);
-    $(".field").keyup(onKeyUp);
+    /**
+     * Add event handlers to Editor key events. Setup only needs to be 
+     * performed when the editor is first created.
+     */
+    $(".field").keydown(this.onKeyDown);
+    $(".field").keyup(this.onKeyUp);
+
+    /**
+     * Add event handlers to Reviewer key events to extend functionality to
+     * "Edit Field During Review" plugin. This needs to be called each time
+     * a question/answer is shown since that is when fields are made editable.
+     */
+    this.setupReviewerKeyEvents = function() {
+        $("[contenteditable=true]").keydown(this.onKeyDown);
+        $("[contenteditable=true]").keyup(this.onKeyUp);
+    }
 
     // Pattern Matching:
     //----------------------------------

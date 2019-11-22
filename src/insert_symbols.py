@@ -12,7 +12,7 @@ import aqt
 
 from anki import version
 from anki.hooks import addHook, wrap
-from aqt import editor, utils, mw
+from aqt import editor, reviewer, utils, mw
 
 from .symbol_manager import *
 from .symbol_window import SymbolWindow
@@ -26,70 +26,101 @@ else:
     ADDON_PATH = os.path.dirname(__file__).decode(SYS_ENCODING)
 
 
-""" 
-Editor Actions 
+""" Keeps track of all WebViews with symbol replacement Javascript. """
+ins_sym_webviews = {
+    "editors": [],
+    "reviewer": None
+}
 
-These actions occur when an instance of the card editor defined in Anki's 
-aqt/editor.py (ie. Add Card window or Card Browser) is opened.
-"""
+def _update_JS(webview):
+    """ Updates the symbol list in the Javascript file. """
+    json = mw.ins_sym_manager.get_JSON()
+    webview.eval("insert_symbols.setMatchList(%s)" % json)
 
-open_editors = []
-
-def on_editor_set_note(self, note, hide=True, focus=False):
-    """
-    Anki calls Editor.setNote() when an instance of the editor should be 
-    updated. This occurs when either the Add Card window or Card Browser either 
-    should show a note or is closed. NOTE will either contain the note to show 
-    or None if the editor should be closed. 
-
-    We implement this wrapper to keep track of all the editors that are 
-    currently open so that any changes to the symbol list will be pushed to all
-    editors immediately. Since this is a wrapper to Editor.setNote(), SELF 
-    refers to the editor in aqt/editor.py.
-    
-    FYI: In Anki 2.1, focus=False becomes focusTo=None.
-    """
-    if note:
-        if self not in open_editors:
-            open_editors.append(self)
-            #sys.stderr.write("Open Editors: " + str(len(open_editors)))
-    else:
-        if self in open_editors:
-            open_editors.remove(self)
-            #sys.stderr.write("Open Editors: " + str(len(open_editors)))
-
-def on_editor_load_note(self, focusTo=None):
+def _load_JS(webview):
     """ 
-    Anki calls Editor.loadNote() to refresh the editor's WebView with the 
-    fields of the note. This occurs after Editor.setNote() is called, when the 
-    "Edit HTML" command is used (through Editor.onHtmlEdit()), and when 
-    Editor.bridge() / Editor.onBridgeCmd() is called.
-
-    We implement this wrapper to add the Javascript code that performs symbol 
-    replacement into the WebView. The code gets cleared after every call to 
-    Editor.loadNote(), so it's not enough to add the Javascript during 
-    on_editor_set_note() only. Since this is a wrapper to Editor.setNote(), 
-    SELF refers to the editor in aqt/editor.py.
-
-    FYI: In Anki 2.1, 1) the focusTo=None argument is new and 2) there is now 
-    a hook for loadNote().
+    Loads replacer.js, the Javascript file which performs symbol replacement, 
+    into the given WebView.
     """
     js_path = os.path.join(ADDON_PATH, "replacer.js")
     with open(js_path, 'r') as js_file:
         js = js_file.read()
-        self.web.eval(js)
-
-        json = mw.ins_sym_manager.get_JSON()
-        self.web.eval("insert_symbols.setMatchList(%s)" % json)
+        webview.eval(js)
+        _update_JS(webview)
 
 def update_symbols():
     """
     This function is called by SymbolManager whenever the symbol list is 
     updated. It updates the symbolList for every editor that is open.
     """
-    for editor in open_editors:
-        json = mw.ins_sym_manager.get_JSON()
-        editor.web.eval("insert_symbols.setMatchList(%s)" % json)
+    for web in ins_sym_webviews['editors']:
+        _update_JS(web)
+
+    if ins_sym_webviews['reviewer']:
+        _update_JS(ins_sym_webviews['reviewer'])
+
+""" 
+Editor Actions 
+
+These actions occur when an instance of the card editor defined in Anki's 
+aqt/editor.py (ie. Add Card window, Card Browser, or Reviewer) is opened.
+"""
+
+def on_editor_set_note(self, note, hide=True, focus=False):
+    """
+    Anki calls Editor.setNote() when the Add Card window / Card Browser either 
+    should show a note (NOTE = the note) or is closed (NOTE = None). Note that 
+    SELF refers to Editor in aqt/editor.py.
+    
+    FYI: In Anki 2.1, focus=False becomes focusTo=None.
+    """
+    editor_webviews = ins_sym_webviews['editors']
+    if note:
+        if self.web not in editor_webviews:
+            editor_webviews.append(self.web)
+            #sys.stderr.write("Open Editors: " + str(len(editor_webviews)))
+    else:
+        if self.web in editor_webviews:
+            editor_webviews.remove(self.web)
+            #sys.stderr.write("Open Editors: " + str(len(editor_webviews)))
+
+def on_editor_load_note(self, focusTo=None):
+    """ 
+    Anki calls Editor.loadNote() to refresh the editor's WebView, which occurs 
+    after setNote(), onHtmlEdit(), and bridge() / onBridgeCmd() in Editor is 
+    called. Editor.loadNote() resets Javascript code, so we must re-add our JS
+    after every loadNote(). Note that SELF refers to Editor in aqt/editor.py.
+
+    FYI: In Anki 2.1, 1) the focusTo=None argument is new and 2) there is now 
+    a hook for loadNote().
+    """
+    _load_JS(self.web)
+
+def on_reviewer_initweb(self):
+    """
+    Anki calls Reviewer._initWeb() to update the WebView, which occurs when the
+    reviewer is first opened or after every 100 cards have been reviewed. Note
+    that SELF refers to the Reviewer in aqt/reviewer.py.
+    """
+    ins_sym_webviews['reviewer'] = self.web
+    _load_JS(self.web)
+    # aqt.utils.showInfo("on_reviewer_start() called")
+
+def on_reviewer_cleanup():
+    """ This event is triggered when the Reviewer is about to be closed. """
+    ins_sym_webviews['reviewer'] = None
+    # aqt.utils.showInfo("on_reviewer_end() called")
+
+def on_show_qa():
+    """ 
+    This event is triggered when the Reviewer shows either a question or an
+    answer. Since the Editable Fields plugin makes the fields editable when 
+    each card is created, key listeners need to be set up after each time.
+    """
+    webview = ins_sym_webviews['reviewer']
+    if webview:
+        webview.eval("insert_symbols.setupReviewerKeyEvents()")
+    # aqt.utils.showInfo("on_show_qa() called")
 
 
 """ 
@@ -111,6 +142,13 @@ def on_profile_loaded():
         on_editor_set_note, 'after')
     editor.Editor.loadNote = wrap(editor.Editor.loadNote, 
         on_editor_load_note, 'after')
+
+    # Add reviewer wrappers:
+    reviewer.Reviewer._initWeb = wrap(reviewer.Reviewer._initWeb, 
+        on_reviewer_initweb, 'after')
+    addHook("reviewCleanup", on_reviewer_cleanup)
+    addHook("showQuestion", on_show_qa)
+    addHook("showAnswer", on_show_qa)
 
 addHook("profileLoaded", on_profile_loaded)
 
