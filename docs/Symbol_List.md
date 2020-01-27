@@ -153,7 +153,7 @@ For instructions on how to add your own symbols, please see the [[FAQ|FAQ]].
 | &#946; | `:beta:` |
 | &#947; | `:gamma:` |
 | &#948; | `:delta:` |
-| &#949; | `:episilon:` |
+| &#949; | `:epsilon:` |
 | &#950; | `:zeta:` |
 | &#951; | `:eta:` |
 | &#952; | `:theta:` |
@@ -183,7 +183,7 @@ For instructions on how to add your own symbols, please see the [[FAQ|FAQ]].
 | &#914; | `:Beta:` |
 | &#915; | `:Gamma:` |
 | &#916; | `:Delta:` |
-| &#917; | `:Episilon:` |
+| &#917; | `:Epsilon:` |
 | &#918; | `:Zeta:` |
 | &#919; | `:Eta:` |
 | &#920; | `:Theta:` |
