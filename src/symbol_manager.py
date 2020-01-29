@@ -10,6 +10,7 @@ Anki uses to store user profiles (mw.pm.db).
 import sys
 import string
 import json
+import aqt
 
 from .default_symbols import DEFAULT_MATCHES, SPECIAL_KEYS
 
@@ -28,7 +29,7 @@ class SymbolManager(object):
     ERR_KEY_CONFLICT = -3
 
     def __init__(self, main_window, update_callback):
-        self._db = main_window.col.db
+        self._col = main_window.col
         self._symbols = None
         self._defaults = None
         self._update_callback = update_callback
@@ -211,19 +212,19 @@ class SymbolManager(object):
     def _check_db_exists(self):
         """ Returns whether the symbol database exists. """
         query = "SELECT * FROM sqlite_master WHERE type='table' AND name='%s'"
-        return self._db.first(query % self.TBL_NAME)
+        return self._col.db.first(query % self.TBL_NAME)
 
     def _create_db(self):
         """ Creates a new table for the symbol list. """
         query = "CREATE TABLE %s (key varchar(255), value varchar(255))"
-        self._db.execute(query % self.TBL_NAME)
+        self._col.db.execute(query % self.TBL_NAME)
 
     def _load_from_db(self):
         """ 
         Attempts to load the symbol list from the database, and returns a code 
         indicating the result. 
         """
-        symbols_from_db = self._db.all("SELECT * FROM %s" % self.TBL_NAME)
+        symbols_from_db = self._col.db.all("SELECT * FROM %s" % self.TBL_NAME)
 
         if not symbols_from_db:
             return self.ERR_NO_DATABASE
@@ -235,9 +236,18 @@ class SymbolManager(object):
         """ 
         Deletes all old values, then writes the symbol list into the database. 
         """
-        self._db.execute("delete from %s" % self.TBL_NAME)
+        # TODO: Anki sync operation closes database. 
+        if not self._col.db:
+            aqt.utils.showInfo("The Symbols As You Type plugin currently "
+                + "does not support updating the symbol list after a sync "
+                + "operation. \n\nThis will be fixed in a later update, but "
+                + "for now please re-start Anki and make your changes before "
+                + "pressing the \"Sync\" button.")
+            return
+
+        self._col.db.execute("delete from %s" % self.TBL_NAME)
         for (k, v) in self._symbols:
             query = "INSERT INTO %s VALUES (?, ?)"
-            self._db.execute(query % self.TBL_NAME, k, v)
-        self._db.commit()
+            self._col.db.execute(query % self.TBL_NAME, k, v)
+        self._col.db.commit()
 
