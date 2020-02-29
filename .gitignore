@@ -3,4 +3,3 @@ build/
 
 *.swp
 __init__.py
-src/Ui_SymbolWindow.py

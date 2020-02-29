@@ -27,7 +27,7 @@ for i in !($EXCLUDES); do
 done
 
 cp Ui_SymbolWindow_4.py "../$BUILD_FOLDER/Anki20/$ADDON_NAME/Ui_SymbolWindow.py"
-cp Ui_SymbolWindow_5.py "../$BUILD_FOLDER/Anki21/Ui_SymbolWindow.py"
+cp Ui_SymbolWindow.py "../$BUILD_FOLDER/Anki21/Ui_SymbolWindow.py"
 cp "../manifest.json" "../$BUILD_FOLDER/Anki21/manifest.json"
 
 py_fname=$(echo $ADDON_NAME | tr '_' ' ' | sed 's/\b[a-z]/\u&/g')
