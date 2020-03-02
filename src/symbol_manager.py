@@ -29,7 +29,7 @@ class SymbolManager(object):
     ERR_KEY_CONFLICT = -3
 
     def __init__(self, main_window, update_callback):
-        self._col = main_window.col
+        self._mw = main_window
         self._symbols = None
         self._defaults = None
         self._update_callback = update_callback
@@ -79,7 +79,6 @@ class SymbolManager(object):
 
             output.append({"key": key,"val": val, "sp": is_special})
         return json.dumps(json.dumps(output))
-
 
     def get_list(self):
         """
@@ -212,19 +211,19 @@ class SymbolManager(object):
     def _check_db_exists(self):
         """ Returns whether the symbol database exists. """
         query = "SELECT * FROM sqlite_master WHERE type='table' AND name='%s'"
-        return self._col.db.first(query % self.TBL_NAME)
+        return self._mw.col.db.first(query % self.TBL_NAME)
 
     def _create_db(self):
         """ Creates a new table for the symbol list. """
         query = "CREATE TABLE %s (key varchar(255), value varchar(255))"
-        self._col.db.execute(query % self.TBL_NAME)
+        self._mw.col.db.execute(query % self.TBL_NAME)
 
     def _load_from_db(self):
         """ 
         Attempts to load the symbol list from the database, and returns a code 
         indicating the result. 
         """
-        symbols_from_db = self._col.db.all("SELECT * FROM %s" % self.TBL_NAME)
+        symbols_from_db = self._mw.col.db.all("SELECT * FROM %s" % self.TBL_NAME)
 
         if not symbols_from_db:
             return self.ERR_NO_DATABASE
@@ -236,18 +235,9 @@ class SymbolManager(object):
         """ 
         Deletes all old values, then writes the symbol list into the database. 
         """
-        # TODO: Anki sync operation closes database. 
-        if not self._col.db:
-            aqt.utils.showInfo("The Symbols As You Type plugin currently "
-                + "does not support updating the symbol list after a sync "
-                + "operation. \n\nThis will be fixed in a later update, but "
-                + "for now please re-start Anki and make your changes before "
-                + "pressing the \"Sync\" button.")
-            return
-
-        self._col.db.execute("delete from %s" % self.TBL_NAME)
+        self._mw.col.db.execute("delete from %s" % self.TBL_NAME)
         for (k, v) in self._symbols:
             query = "INSERT INTO %s VALUES (?, ?)"
-            self._col.db.execute(query % self.TBL_NAME, k, v)
-        self._col.db.commit()
+            self._mw.col.db.execute(query % self.TBL_NAME, k, v)
+        self._mw.col.db.commit()
 
