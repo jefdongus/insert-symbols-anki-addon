@@ -58,17 +58,16 @@ class SymbolManager(object):
 
     """ Getters """
 
-    def get_JSON(self):
-        """ 
-        Converts the symbol list into JSON and sorts it by key length in
-        descending order. Each entry is of the format { key, val, flag }, where
-        "spe" indicates if the key is special (surrounded by ':').
+    def get_match_list(self):
+        """
+        Converts the symbol list into a match list sorted by key length in
+        descending order. Each entry contains the key/value plus a flag 
+        indicating the type of entry.
         """
         if not self._symbols:
-            return "'[]'"
+            return None
 
         symbols = sorted(self._symbols, key=lambda x: len(x[0]), reverse=True)
-
         output = []
         for key, val in symbols:
             if (key.startswith(':') and key.endswith(':') 
@@ -78,6 +77,15 @@ class SymbolManager(object):
                 is_special = False
 
             output.append({"key": key,"val": val, "sp": is_special})
+        return output
+
+    def get_JSON(self):
+        """ 
+        Returns a JSON version of the match list
+        """
+        output = self.get_match_list()
+        if not output:
+            return "'[]'"
         return json.dumps(json.dumps(output))
 
     def get_list(self):

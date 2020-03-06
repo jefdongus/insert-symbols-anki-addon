@@ -12,9 +12,10 @@ import aqt
 
 from anki import version
 from anki.hooks import addHook, wrap
-from aqt import editor, reviewer, utils, mw
+from aqt import editor, browser, reviewer, utils, mw
 
-from .symbol_manager import *
+from .symbol_manager import SymbolManager
+from .browser_replacer import BrowserReplacer
 from .symbol_window import SymbolWindow
 
 ANKI_VER_21 = version.startswith("2.1.")
@@ -58,6 +59,8 @@ def update_symbols():
 
     if ins_sym_webviews['reviewer']:
         _update_JS(ins_sym_webviews['reviewer'])
+
+    mw.ins_sym_replacer.update_list(mw.ins_sym_manager.get_match_list())
 
 """ 
 Editor Actions 
@@ -132,8 +135,10 @@ These actions occur when a new profile is opened.
 def on_profile_loaded():
     """ Perform setup when a new profile is loaded. """
     mw.ins_sym_manager = SymbolManager(mw, update_symbols)
-    mw.ins_sym_window = SymbolWindow(mw, mw.ins_sym_manager)
     mw.ins_sym_manager.on_profile_loaded()
+
+    mw.ins_sym_window = SymbolWindow(mw, mw.ins_sym_manager)
+    mw.ins_sym_replacer = BrowserReplacer(mw.ins_sym_manager.get_match_list())
 
     # Add editor wrappers here so that if other plugins modify Editor.loadNote
     # this function will still work. There IS a hook for loadNote in Anki 2.1, 
@@ -142,6 +147,10 @@ def on_profile_loaded():
         on_editor_set_note, 'after')
     editor.Editor.loadNote = wrap(editor.Editor.loadNote, 
         on_editor_load_note, 'after')
+
+    # Add browser search bar wrappers:
+    browser.Browser.__init__ = wrap(browser.Browser.__init__, 
+        mw.ins_sym_replacer.on_browser_init, 'after')
 
     # Add reviewer wrappers:
     reviewer.Reviewer._initWeb = wrap(reviewer.Reviewer._initWeb, 
