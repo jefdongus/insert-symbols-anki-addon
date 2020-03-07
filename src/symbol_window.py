@@ -10,6 +10,7 @@ internally triggers a call to SymbolWindow.accept().
 
 import aqt
 import io
+import csv
 
 from anki import version
 from aqt.qt import *
@@ -72,7 +73,7 @@ class SymbolWindow(QDialog):
         return self.ui.keyLineEdit.text().strip()
 
     def _get_val_text(self):
-        return self.ui.valueLineEdit.text().strip()
+        return self.ui.valueLineEdit.text()#.strip()
 
     def is_row_selected(self):
         """ Returns true if a row in the tableWidget is selected. """
@@ -408,18 +409,19 @@ class SymbolWindow(QDialog):
         """
         if ANKI_VER_21:
             fname, _ = QFileDialog.getOpenFileName(self, 'Open file', '',
-                "Text (*.txt)")
+                "CSV (*.csv)")
         else:
             fname = QFileDialog.getOpenFileName(self, 'Open file', '', 
-                "Text (*.txt)")
+                "CSV (*.csv)")
         if not fname:
             return
 
         with io.open(fname, 'r', encoding='utf8') as file:
+            reader = csv.reader(file)
             new_list = []
-            for line in file:
-                words = line.strip().split(None, 1)
-                new_list.append(words)
+
+            for row in reader:
+                new_list.append(row)
 
             if self._validate_imported_list(new_list):
                 # Filter out empty lines before updating the list, but do so 
@@ -475,16 +477,17 @@ class SymbolWindow(QDialog):
 
         if ANKI_VER_21:
             fname, _ = QFileDialog.getSaveFileName(self, 'Save file', '', 
-                "Text (*.txt)")
+                "CSV (*.csv)")
         else:
             fname = QFileDialog.getSaveFileName(self, 'Save file', '', 
-                "Text (*.txt)")
+                "CSV (*.csv)")
         if not fname:
             return
 
-        with io.open(fname, 'w', encoding='utf-8') as file:
+        with io.open(fname, 'w', newline='\n', encoding='utf-8') as file:
+            writer = csv.writer(file)
             for k, v in self._working_list:
-                file.write("%s\t%s\n" % (k, v))
+                writer.writerow([k, v])
             aqt.utils.showInfo("Symbol list written to: " + fname)
 
 

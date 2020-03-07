@@ -66,10 +66,11 @@ class BrowserReplacer(object):
         for item in self._match_list:
             key = item['key']
             val = item['val']
-            sp = item['sp']
+            trigger_on_space = (item['f'] == 0)
 
-            if not sp:
-                # For non-special characters, ***
+            if trigger_on_space:
+                # Make sure to 1) only trigger after whitespace and 2) ignore 
+                # any trailing spaces:
                 if is_enter_pressed:
                     end_index = cursor_pos
                 elif is_whitespace_pressed:
@@ -81,8 +82,8 @@ class BrowserReplacer(object):
 
             start_index = max(end_index - len(key), 0)
             if text[start_index : end_index] == key:
-                if not sp:
-                    # Non-special characters must be preceded by whitespace
+                if trigger_on_space:
+                    # Check that character preceding key is whitespace:
                     prior_idx = start_index - 1
                     if prior_idx >= 0 and not self._is_whitespace(text, prior_idx):
                         continue

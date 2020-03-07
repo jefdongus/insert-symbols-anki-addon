@@ -84,7 +84,7 @@ var insert_symbols = new function() {
             var result = matchesKeyword(text, cursorPos, isWhitespacePressed);
             if (result.val !== null) {
                 performReplacement(sel.focusNode, cursorPos - result.keylen, 
-                    cursorPos, result.val);
+                    cursorPos, result.val, result.html);
             }
         }
     }
@@ -100,16 +100,16 @@ var insert_symbols = new function() {
      * @param text A string containing the substring to check.
      * @param endIndex The length of the substring.
      * @return An object where VAL is value of the matched key-value pair 
-     *   (or null if no match), and KEYLEN is the length of the key in the 
-     *   matched key-value pair.
+     *   (or null if no match), KEYLEN is the length of the key in the 
+     *   matched key-value pair, and HTML is whether the value should be 
+     *   treated as raw HTML.
      */
     function matchesKeyword(text, endIndex, isWhitespacePressed) {
         for (var i = 0, k; i < matchList.length; i++) {
-            notSpecial = !matchList[i].sp;
+            triggerOnSpace = (matchList[i].f == 0);
 
-            // If indicated, skip entries that trigger only when whitespace is
-            // inputted:
-            if (notSpecial && !isWhitespacePressed) {
+            // Skip entries that trigger only when whitespace is inputted:
+            if (triggerOnSpace && !isWhitespacePressed) {
                 continue;
             }
 
@@ -120,16 +120,20 @@ var insert_symbols = new function() {
             if (text.substring(startIndex, endIndex) === key) {
 
                 // If indicated, check if char before match is whitespace:
-                if (notSpecial && startIndex > 0 
+                if (triggerOnSpace && startIndex > 0 
                     && !/\s/.test(text[startIndex - 1])) {
                     continue;
                 }
 
-                return {"val":matchList[i].val, "keylen":key.length};
+                return {
+                    "val":matchList[i].val, 
+                    "keylen":key.length, 
+                    "html": (matchList[i].f == 2)
+                };
             }
         }
 
-        return {"val":null, "keylen":0};
+        return {"val":null, "keylen":0, "html": false};
     }
 
     /**
@@ -142,16 +146,16 @@ var insert_symbols = new function() {
      *   the last character to be deleted). 
      * @param newText Replacement text.
      */
-    function performReplacement(node, rangeStart, rangeEnd, newText) {
-        // Delete old text:
+    function performReplacement(node, rangeStart, rangeEnd, newText, isHTML) {
+        // Insert new text:
+        command = isHTML ? "insertHTML" : "insertText";
+        document.execCommand(command, false, newText);
+
+        // Delete old text AFTER insertion to prevent bugs with empty lines:
         var range = document.createRange();
         range.setStart(node, rangeStart);
         range.setEnd(node, rangeEnd);
         range.deleteContents();
-
-        // Insert new text:
-        node.textContent = node.textContent.substring(0, rangeStart) + newText 
-            + node.textContent.substring(rangeStart);
         
         // Set cursor position to end of inserted text:
         range.setStart(node, rangeStart + newText.length);

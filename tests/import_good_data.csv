@@ -1,0 +1,21 @@
+"""_""",*_*
+'hi',aaaaaaa
+::bold::,<b>bold text</b>
+::macro::,<div>{{c1::</div><div><ul><li><br></li></ul></div><div>}}<br></div>
+::sup::,<sup>text</sup>
+:hiri:,ぁ
+:o:,Ω
+:star:,★
+:tab:,    
+HI,:aaa:
+_hi_,"hi, hi"
+d,multi word values
+fix,d
+hi,< >
+pre,c
+prefix,asdfjkl;
+s1,spacing-1
+s2,spacing-2
+same,text
+suffix,ddd
+value,text

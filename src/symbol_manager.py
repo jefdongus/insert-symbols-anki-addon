@@ -63,6 +63,8 @@ class SymbolManager(object):
         Converts the symbol list into a match list sorted by key length in
         descending order. Each entry contains the key/value plus a flag 
         indicating the type of entry.
+
+        Flag: 2 = HTML block, 1 = immediate, 0 = normal
         """
         if not self._symbols:
             return None
@@ -70,13 +72,15 @@ class SymbolManager(object):
         symbols = sorted(self._symbols, key=lambda x: len(x[0]), reverse=True)
         output = []
         for key, val in symbols:
-            if (key.startswith(':') and key.endswith(':') 
+            if key.startswith('::') and key.endswith('::'):
+                flag = 2
+            elif (key.startswith(':') and key.endswith(':') 
                 or key in SPECIAL_KEYS):
-                is_special = True
+                flag = 1
             else:
-                is_special = False
+                flag = 0
 
-            output.append({"key": key,"val": val, "sp": is_special})
+            output.append({"key": key,"val": val, "f": flag})
         return output
 
     def get_JSON(self):
@@ -86,6 +90,8 @@ class SymbolManager(object):
         output = self.get_match_list()
         if not output:
             return "'[]'"
+        # sys.stderr.write(json.dumps(output))
+        # sys.stderr.write(json.dumps(json.dumps(output)))
         return json.dumps(json.dumps(output))
 
     def get_list(self):
@@ -160,7 +166,7 @@ class SymbolManager(object):
             if ignore_empty and len(item) == 0:
                 continue
 
-            if len(item) != 2 or not item[0]:
+            if len(item) != 2 or not item[0] or not item[1]:
                 has_error = True
                 err_str = ' '.join(map(str, item))
                 errors.append(tuple((i + 1, err_str)))
@@ -231,11 +237,11 @@ class SymbolManager(object):
         Attempts to load the symbol list from the database, and returns a code 
         indicating the result. 
         """
-        symbols_from_db = self._mw.col.db.all("SELECT * FROM %s" % self.TBL_NAME)
+        symbols = self._mw.col.db.all("SELECT * FROM %s" % self.TBL_NAME)
 
-        if not symbols_from_db:
+        if not symbols:
             return self.ERR_NO_DATABASE
-        errors = self._set_symbol_list(symbols_from_db)
+        errors = self._set_symbol_list(symbols)
 
         return errors[0] if errors else self.SUCCESS
 
