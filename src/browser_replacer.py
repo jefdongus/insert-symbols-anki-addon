@@ -36,7 +36,7 @@ class BrowserReplacer(object):
 
     def _is_whitespace(self, string, i):
         """ Checks whether string[i] is whitespace. """
-        if i < 0:
+        if i < 0 or i >= len(string):
             return False
         return string[i].isspace()
 
@@ -94,4 +94,5 @@ class BrowserReplacer(object):
         """ Port of code in replacer.js. """
         new_text = old_text[:start_idx] + value + old_text[end_idx:]
         self._search_box.setText(new_text)
+        self._search_box.setCursorPosition(start_idx + len(value))
 

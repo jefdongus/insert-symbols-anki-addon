@@ -2,4 +2,3 @@ src/__pycache__/
 build/
 
 *.swp
-__init__.py
