@@ -14,18 +14,22 @@ class BrowserReplacer(object):
 
     def on_browser_init(self, browser, mw):
         """ Set up hooks to the search box. """
-        self._search_box = browser.form.searchEdit.lineEdit()
-        self._search_box.textEdited.connect(self.on_text_edited)
-        self._search_box.returnPressed.connect(self.on_return_pressed)
+        self._browser = browser
+        self.get_search_box().textEdited.connect(self.on_text_edited)
+        self.get_search_box().returnPressed.connect(self.on_return_pressed)
 
     def update_list(self, match_list):
         self._match_list = match_list
+
+    def get_search_box(self):
+        """ Underlying QLineEdit object can get deleted. """
+        return self._browser.form.searchEdit.lineEdit()
 
 
     """ Event Handling """
 
     def on_return_pressed(self):
-        current_text = self._search_box.text()
+        current_text = self.get_search_box().text()
         self._check_for_replacement(current_text, True)
 
     def on_text_edited(self, current_text):
@@ -49,7 +53,7 @@ class BrowserReplacer(object):
         if not text:
             return
 
-        cursor_pos = self._search_box.cursorPosition()
+        cursor_pos = self.get_search_box().cursorPosition()
         if is_enter_pressed:
             is_whitespace_pressed = False
         else:
@@ -93,6 +97,6 @@ class BrowserReplacer(object):
     def _perform_replacement(self, old_text, value, start_idx, end_idx):
         """ Port of code in replacer.js. """
         new_text = old_text[:start_idx] + value + old_text[end_idx:]
-        self._search_box.setText(new_text)
-        self._search_box.setCursorPosition(start_idx + len(value))
+        self.get_search_box().setText(new_text)
+        self.get_search_box().setCursorPosition(start_idx + len(value))
 
