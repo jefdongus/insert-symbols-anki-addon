@@ -15,22 +15,31 @@ class BrowserReplacer(object):
     def on_browser_init(self, browser, mw):
         """ Set up hooks to the search box. """
         self._browser = browser
-        self.get_search_box().textEdited.connect(self.on_text_edited)
-        self.get_search_box().returnPressed.connect(self.on_return_pressed)
+
+        search_box = self.get_search_box()
+        if search_box:
+            search_box.textEdited.connect(self.on_text_edited)
+            search_box.returnPressed.connect(self.on_return_pressed)
 
     def update_list(self, match_list):
         self._match_list = match_list
 
     def get_search_box(self):
         """ Underlying QLineEdit object can get deleted. """
-        return self._browser.form.searchEdit.lineEdit()
+        searchEdit = self._browser.form.searchEdit
+        if not searchEdit:
+            return None
+        else:
+            return searchEdit.lineEdit()
 
 
     """ Event Handling """
 
     def on_return_pressed(self):
-        current_text = self.get_search_box().text()
-        self._check_for_replacement(current_text, True)
+        search_box = self.get_search_box()
+        if search_box:
+            current_text = search_box.text()
+            self._check_for_replacement(current_text, True)
 
     def on_text_edited(self, current_text):
         self._check_for_replacement(current_text, False)
@@ -50,10 +59,11 @@ class BrowserReplacer(object):
         is triggered after a whitespace character is inserted, whereas it isn't
         in the Javascript code. 
         """
-        if not text:
+        search_box = self.get_search_box()
+        if not text or not search_box:
             return
 
-        cursor_pos = self.get_search_box().cursorPosition()
+        cursor_pos = search_box.cursorPosition()
         if is_enter_pressed:
             is_whitespace_pressed = False
         else:
