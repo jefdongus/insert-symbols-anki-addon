@@ -35,6 +35,11 @@ var insert_symbols = new function() {
      * defer to keyup for everything else. It works for the most part.
      */
     this.onKeyDown = function(evt) {
+        // Disable CTRL commands from triggering replacement:
+        if (evt.ctrlKey) {
+            return;
+        }
+        
         if (evt.which == KEY_SPACE || evt.which == KEY_ENTER) {
             checkForReplacement(true);
         } else {
@@ -147,22 +152,14 @@ var insert_symbols = new function() {
      * @param newText Replacement text.
      */
     function performReplacement(node, rangeStart, rangeEnd, newText, isHTML) {
-        // Insert new text:
+        // Delete key:
+        for (var i = rangeStart; i < rangeEnd; i++) {
+            document.execCommand("delete", false, null);
+        }
+
+        // Insert new symbol:
         command = isHTML ? "insertHTML" : "insertText";
         document.execCommand(command, false, newText);
-
-        // Delete old text AFTER insertion to prevent bugs with empty lines:
-        var range = document.createRange();
-        range.setStart(node, rangeStart);
-        range.setEnd(node, rangeEnd);
-        range.deleteContents();
-        
-        // Set cursor position to end of inserted text:
-        range.setStart(node, rangeStart + newText.length);
-        range.collapse(true);
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
     }
 
     // Debugging:
