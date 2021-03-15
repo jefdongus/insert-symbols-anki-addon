@@ -39,9 +39,9 @@ var insert_symbols = new function() {
         if (evt.ctrlKey) {
             return;
         }
-        
+
         if (evt.which == KEY_SPACE || evt.which == KEY_ENTER) {
-            checkForReplacement(true);
+            checkForReplacement(evt.currentTarget.getRootNode(), true);
         } else {
             shouldCheckOnKeyup = true;
         }
@@ -50,7 +50,7 @@ var insert_symbols = new function() {
     this.onKeyUp = function(evt) {
         if (shouldCheckOnKeyup) {
             shouldCheckOnKeyup = false;
-            checkForReplacement(false);
+            checkForReplacement(evt.currentTarget.getRootNode(), false);
         }
     }
 
@@ -58,8 +58,13 @@ var insert_symbols = new function() {
      * Add event handlers to Editor key events. Setup only needs to be 
      * performed when the editor is first created.
      */
-    $(".field").keydown(this.onKeyDown);
-    $(".field").keyup(this.onKeyUp);
+    forEditorField([], (field) => {
+        if (!field.hasAttribute("has-type-symbols")) {
+            field.editingArea.editable.addEventListener("keydown", this.onKeyDown)
+            field.editingArea.editable.addEventListener("keyup", this.onKeyUp)
+            field.setAttribute("has-type-symbols", "")
+        }
+    })
 
     /**
      * Add event handlers to Reviewer key events to extend functionality to
@@ -67,8 +72,8 @@ var insert_symbols = new function() {
      * a question/answer is shown since that is when fields are made editable.
      */
     this.setupReviewerKeyEvents = function() {
-        $("[contenteditable=true]").keydown(this.onKeyDown);
-        $("[contenteditable=true]").keyup(this.onKeyUp);
+        $("[contenteditable]").keydown(this.onKeyDown);
+        $("[contenteditable]").keyup(this.onKeyUp);
     }
 
     // Pattern Matching:
@@ -79,8 +84,8 @@ var insert_symbols = new function() {
      * symbol list. For simplicity, this function only looks at text within the 
      * current Node.
      */
-    function checkForReplacement(isWhitespacePressed) {
-        var sel = window.getSelection();
+    function checkForReplacement(root, isWhitespacePressed) {
+        var sel = root.getSelection();
         if (sel.isCollapsed) {
             var text = sel.focusNode.textContent;
             var cursorPos = sel.focusOffset;
