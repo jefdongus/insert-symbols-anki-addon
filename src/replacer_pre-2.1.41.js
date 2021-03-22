@@ -1,8 +1,9 @@
 /*
  * Javascript code that performs symbol replacement. insert_symbols.py adds 
- * this script to each Anki editor's WebView after setting the symbol list.
+ * this script to each Anki editor's WebView after setting the symbol list. 
  * 
- * This version is compatible with Anki versions 2.1.41 and newer.
+ * This version is compatible with Anki versions 2.1.40 and older. FYI Anki 
+ * 2.0 uses jQuery version 1.5.
  */
 
 var insert_symbols = new function() {
@@ -39,9 +40,9 @@ var insert_symbols = new function() {
         if (evt.ctrlKey) {
             return;
         }
-
+        
         if (evt.which == KEY_SPACE || evt.which == KEY_ENTER) {
-            checkForReplacement(evt.currentTarget.getRootNode(), true);
+            checkForReplacement(true);
         } else {
             shouldCheckOnKeyup = true;
         }
@@ -50,7 +51,7 @@ var insert_symbols = new function() {
     this.onKeyUp = function(evt) {
         if (shouldCheckOnKeyup) {
             shouldCheckOnKeyup = false;
-            checkForReplacement(evt.currentTarget.getRootNode(), false);
+            checkForReplacement(false);
         }
     }
 
@@ -58,13 +59,8 @@ var insert_symbols = new function() {
      * Add event handlers to Editor key events. Setup only needs to be 
      * performed when the editor is first created.
      */
-    forEditorField([], (field) => {
-        if (!field.hasAttribute("has-type-symbols")) {
-            field.editingArea.editable.addEventListener("keydown", this.onKeyDown)
-            field.editingArea.editable.addEventListener("keyup", this.onKeyUp)
-            field.setAttribute("has-type-symbols", "")
-        }
-    })
+    $(".field").keydown(this.onKeyDown);
+    $(".field").keyup(this.onKeyUp);
 
     /**
      * Add event handlers to Reviewer key events to extend functionality to
@@ -72,8 +68,8 @@ var insert_symbols = new function() {
      * a question/answer is shown since that is when fields are made editable.
      */
     this.setupReviewerKeyEvents = function() {
-        $("[contenteditable]").keydown(this.onKeyDown);
-        $("[contenteditable]").keyup(this.onKeyUp);
+        $("[contenteditable=true]").keydown(this.onKeyDown);
+        $("[contenteditable=true]").keyup(this.onKeyUp);
     }
 
     // Pattern Matching:
@@ -84,8 +80,8 @@ var insert_symbols = new function() {
      * symbol list. For simplicity, this function only looks at text within the 
      * current Node.
      */
-    function checkForReplacement(root, isWhitespacePressed) {
-        var sel = root.getSelection();
+    function checkForReplacement(isWhitespacePressed) {
+        var sel = window.getSelection();
         if (sel.isCollapsed) {
             var text = sel.focusNode.textContent;
             var cursorPos = sel.focusOffset;
