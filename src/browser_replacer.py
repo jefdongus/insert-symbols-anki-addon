@@ -12,7 +12,7 @@ class BrowserReplacer(object):
     def __init__(self, match_list):
         self._match_list = match_list
 
-    def on_browser_init(self, browser, mw):
+    def on_browser_init(self, browser, mw, card = None, search = None):
         """ Set up hooks to the search box. """
         self._browser = browser
 
