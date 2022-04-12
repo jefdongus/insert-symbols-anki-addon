@@ -3,7 +3,6 @@ This file contains BrowserReplacer, which replicates the function of
 replacer.js for the Browser search bar.
 """
 
-import aqt
 
 from aqt.qt import *
 

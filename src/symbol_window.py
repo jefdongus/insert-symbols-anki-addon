@@ -60,11 +60,11 @@ class SymbolWindow(QDialog):
         self.ui.tableWidget.cellClicked.connect(self.on_cell_clicked)
         h_header = self.ui.tableWidget.horizontalHeader()
         if ANKI_VER == ANKI_VER_PRE_2_1_0:
-            h_header.setResizeMode(0, QHeaderView.Stretch)
-            h_header.setResizeMode(1, QHeaderView.Stretch)
+            h_header.setResizeMode(0, QHeaderView.ResizeMode.Stretch)
+            h_header.setResizeMode(1, QHeaderView.ResizeMode.Stretch)
         else:
-            h_header.setSectionResizeMode(0, QHeaderView.Stretch)
-            h_header.setSectionResizeMode(1, QHeaderView.Stretch)
+            h_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+            h_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
 
 
     """ Editor State Getters """
@@ -172,7 +172,7 @@ class SymbolWindow(QDialog):
         index = min(index, self.ui.tableWidget.rowCount() - 1)
 
         item = self.ui.tableWidget.item(index, 0)
-        self.ui.tableWidget.scrollToItem(item, QAbstractItemView.PositionAtTop)
+        self.ui.tableWidget.scrollToItem(item, QAbstractItemView.ScrollHint.PositionAtTop)
 
     def on_key_text_changed(self, current_text):
         """ 
@@ -293,8 +293,8 @@ class SymbolWindow(QDialog):
         if old_list != self._working_list:
             confirm_msg = "Close without saving?"
             reply = QMessageBox.question(self, 'Message', confirm_msg, 
-                QMessageBox.Yes, QMessageBox.No)
-            if reply == QMessageBox.Yes:
+                QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
                 super(SymbolWindow, self).reject()
         else:
             super(SymbolWindow, self).reject()
@@ -392,8 +392,8 @@ class SymbolWindow(QDialog):
         confirm_msg = ("Load default symbols? This will delete any "
             "unsaved changes!")
         reply = QMessageBox.question(self, 'Message', confirm_msg, 
-            QMessageBox.Yes, QMessageBox.No)
-        if reply == QMessageBox.Yes:
+            QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
             self._working_list = self._sym_manager.get_default_list()
             self._reload_view()
 
@@ -465,8 +465,8 @@ class SymbolWindow(QDialog):
         if old_list != self._working_list:
             confirm_msg = "You must save changes before exporting. Save now?"
             reply = QMessageBox.question(self, 'Message', confirm_msg, 
-                QMessageBox.Yes, QMessageBox.No)
-            if reply == QMessageBox.Yes:
+                QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
                 is_success = self._save()
                 if is_success:
                     aqt.utils.showInfo('The symbol list has been saved.')

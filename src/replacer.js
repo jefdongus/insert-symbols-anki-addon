@@ -5,15 +5,14 @@
  * This version is compatible with Anki versions 2.1.41 and newer.
  */
 
-var insert_symbols = new function() {
-
+var insert_symbols = new function () {
     const KEY_SPACE = 32;
     const KEY_ENTER = 13;
 
     var matchList = undefined;
     var shouldCheckOnKeyup = false;
 
-    this.setMatchList = function(str) {
+    this.setMatchList = function (str) {
         matchList = JSON.parse(str);
     }
 
@@ -34,7 +33,7 @@ var insert_symbols = new function() {
      * during keydown since those char mappings are relatively constant, but
      * defer to keyup for everything else. It works for the most part.
      */
-    this.onKeyDown = function(evt) {
+    this.onKeyDown = function (evt) {
         // Disable CTRL commands from triggering replacement:
         if (evt.ctrlKey) {
             return;
@@ -47,31 +46,52 @@ var insert_symbols = new function() {
         }
     }
 
-    this.onKeyUp = function(evt) {
+    this.onKeyUp = function (evt) {
         if (shouldCheckOnKeyup) {
             shouldCheckOnKeyup = false;
             checkForReplacement(evt.currentTarget.getRootNode(), false);
         }
     }
-
     /**
      * Add event handlers to Editor key events. Setup only needs to be 
      * performed when the editor is first created.
      */
-    forEditorField([], (field) => {
-        if (!field.hasAttribute("has-type-symbols")) {
-            field.editingArea.editable.addEventListener("keydown", this.onKeyDown)
-            field.editingArea.editable.addEventListener("keyup", this.onKeyUp)
-            field.setAttribute("has-type-symbols", "")
-        }
-    })
+    if (typeof forEditorField !== 'undefined') {
+        // for Anki < 2.1.50
+        forEditorField([], (field) => {
+            if (!field.hasAttribute("has-type-symbols")) {
+                field.editingArea.editable.addEventListener("keydown", this.onKeyDown)
+                field.editingArea.editable.addEventListener("keyup", this.onKeyUp)
+                field.setAttribute("has-type-symbols", "")
+            }
+        })
+    } else {
+        // for Anki >= 2.1.50
+        setTimeout(() => {
+            require("anki/ui").loaded.then(() => {
+                fields = require("anki/NoteEditor").instances[0].fields
+                for (const field of fields) {
+                    field.element.then((fieldElm) => {
+                        if (!fieldElm.hasAttribute("has-type-symbols")) {
+                            const editingArea = fieldElm.getElementsByClassName("editing-area")[0];
+                            const shadowRoot = editingArea.getElementsByClassName("rich-text-editable")[0].shadowRoot;
+                            const editable = shadowRoot?.querySelector("anki-editable");
+                            editable.addEventListener("keydown", this.onKeyDown)
+                            editable.addEventListener("keyup", this.onKeyUp)
+                            fieldElm.setAttribute("has-type-symbols", "")
+                        }
+                    })
+                }
+            })
+        })
+    }
 
     /**
      * Add event handlers to Reviewer key events to extend functionality to
      * "Edit Field During Review" plugin. This needs to be called each time
      * a question/answer is shown since that is when fields are made editable.
      */
-    this.setupReviewerKeyEvents = function() {
+    this.setupReviewerKeyEvents = function () {
         $("[contenteditable]").keydown(this.onKeyDown);
         $("[contenteditable]").keyup(this.onKeyUp);
     }
@@ -93,7 +113,7 @@ var insert_symbols = new function() {
 
             var result = matchesKeyword(text, cursorPos, isWhitespacePressed);
             if (result.val !== null) {
-                performReplacement(sel.focusNode, cursorPos - result.keylen, 
+                performReplacement(sel.focusNode, cursorPos - result.keylen,
                     cursorPos, result.val, result.html);
             }
         }
@@ -130,20 +150,20 @@ var insert_symbols = new function() {
             if (text.substring(startIndex, endIndex) === key) {
 
                 // If indicated, check if char before match is whitespace:
-                if (triggerOnSpace && startIndex > 0 
+                if (triggerOnSpace && startIndex > 0
                     && !/\s/.test(text[startIndex - 1])) {
                     continue;
                 }
 
                 return {
-                    "val":matchList[i].val, 
-                    "keylen":key.length, 
+                    "val": matchList[i].val,
+                    "keylen": key.length,
                     "html": (matchList[i].f == 2)
                 };
             }
         }
 
-        return {"val":null, "keylen":0, "html": false};
+        return { "val": null, "keylen": 0, "html": false };
     }
 
     /**
