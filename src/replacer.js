@@ -75,7 +75,7 @@ var insert_symbols = new function () {
                         if (!fieldElm.hasAttribute("has-type-symbols")) {
                             const editingArea = fieldElm.getElementsByClassName("editing-area")[0];
                             const shadowRoot = editingArea.getElementsByClassName("rich-text-editable")[0].shadowRoot;
-                            const editable = shadowRoot?.querySelector("anki-editable");
+                            const editable = shadowRoot.querySelector("anki-editable");
                             editable.addEventListener("keydown", this.onKeyDown)
                             editable.addEventListener("keyup", this.onKeyUp)
                             fieldElm.setAttribute("has-type-symbols", "")
