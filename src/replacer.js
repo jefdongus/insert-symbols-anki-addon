@@ -52,12 +52,14 @@ var insert_symbols = new function () {
             checkForReplacement(evt.currentTarget.getRootNode(), false);
         }
     }
+
     /**
      * Add event handlers to Editor key events. Setup only needs to be 
      * performed when the editor is first created.
      */
-    if (typeof forEditorField !== 'undefined') {
-        // for Anki < 2.1.50
+
+    // For Anki 2.1.41 - 2.1.49
+    this.addListenersV1 =  function() {
         forEditorField([], (field) => {
             if (!field.hasAttribute("has-type-symbols")) {
                 field.editingArea.editable.addEventListener("keydown", this.onKeyDown)
@@ -65,25 +67,34 @@ var insert_symbols = new function () {
                 field.setAttribute("has-type-symbols", "")
             }
         })
-    } else {
-        // for Anki >= 2.1.50
+    }
+
+    // For Anki 2.1.50+
+    this.addListenersV2 =  function() {
         setTimeout(() => {
             require("anki/ui").loaded.then(() => {
                 fields = require("anki/NoteEditor").instances[0].fields
+
                 for (const field of fields) {
                     field.element.then((fieldElm) => {
                         if (!fieldElm.hasAttribute("has-type-symbols")) {
                             const editingArea = fieldElm.getElementsByClassName("editing-area")[0];
                             const shadowRoot = editingArea.getElementsByClassName("rich-text-editable")[0].shadowRoot;
-                            const editable = shadowRoot.querySelector("anki-editable");
-                            editable.addEventListener("keydown", this.onKeyDown)
-                            editable.addEventListener("keyup", this.onKeyUp)
+
+                            shadowRoot.addEventListener("keydown", this.onKeyDown)
+                            shadowRoot.addEventListener("keyup", this.onKeyUp)
                             fieldElm.setAttribute("has-type-symbols", "")
                         }
                     })
                 }
             })
-        })
+        }, 20)  // To prevent our code trying to add listeners before HTML is ready  
+    }
+
+    if (typeof forEditorField !== 'undefined') {
+        this.addListenersV1();
+    } else {
+        this.addListenersV2();
     }
 
     /**
