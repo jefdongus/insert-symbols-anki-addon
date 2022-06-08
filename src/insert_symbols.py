@@ -6,16 +6,17 @@ to editor windows that are open.
 Note: For debugging, use either sys.stderr.write() or aqt.utils.showInfo().
 """
 
-import sys
 import os
+import sys
+
 import aqt
-
 from anki.hooks import addHook, wrap
-from aqt import editor, browser, reviewer, utils, mw
+from aqt import browser, editor, mw, reviewer
+from aqt.editor import EditorWebView
 
+from .browser_replacer import BrowserReplacer
 from .get_version import *
 from .symbol_manager import SymbolManager
-from .browser_replacer import BrowserReplacer
 from .symbol_window import SymbolWindow
 
 """ Loads filenames based on Anki version  """
@@ -41,12 +42,12 @@ ins_sym_webviews = {
     "reviewer": None
 }
 
-def _update_JS(webview):
+def _update_JS(webview: EditorWebView):
     """ Updates the symbol list in the Javascript file. """
     json = mw.ins_sym_manager.get_JSON()
     webview.eval("insert_symbols.setMatchList(%s)" % json)
 
-def _load_JS(webview):
+def _load_JS(webview: EditorWebView):
     """ 
     Loads replacer.js, the Javascript file which performs symbol replacement, 
     into the given WebView.

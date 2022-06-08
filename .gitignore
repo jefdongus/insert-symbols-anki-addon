@@ -3,3 +3,4 @@ src/.idea/
 build/
 
 *.swp
+*.pyc
