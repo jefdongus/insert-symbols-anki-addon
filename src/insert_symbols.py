@@ -159,6 +159,7 @@ def on_profile_loaded():
         on_editor_load_note, 'after')
 
     # Add browser search bar wrappers:
+    # Can use gui_hooks.browser_will_show()
     browser.Browser.__init__ = wrap(browser.Browser.__init__, 
         mw.ins_sym_replacer.on_browser_init, 'after')
 
@@ -175,25 +176,3 @@ addHook("profileLoaded", on_profile_loaded)
 open_action = aqt.qt.QAction("Insert Symbol Options...", mw, 
     triggered=lambda: mw.ins_sym_window.open())
 mw.form.menuTools.addAction(open_action)
-
-""" 
-Debugging Functions 
-
-Note: In Anki 2.1, the bridge() function in editor is renamed to onBridgeCmd().
-"""
-
-# def on_editor_bridge(self, string, _old=None):
-# 	# Note: this doesn't quite work in Anki 2.1 yet
-#     if string.startswith("debug_err"):
-#         (_, value) = string.split(":", 1)
-#         sys.stderr.write(value)
-#     elif string.startswith("debug_div"):
-#         (_, value) = string.split(":", 1)
-#         self.web.eval('$(".debug").html("%s")' % value)
-
-# if ANKI_VER == ANKI_VER_PRE_2_1_0:
-#     editor.Editor.bridge = wrap(editor.Editor.bridge, 
-#         on_editor_bridge, 'before')
-# else:
-#     editor.Editor.bridge = wrap(editor.Editor.onBridgeCmd, 
-#         on_editor_bridge, 'before')

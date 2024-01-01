@@ -3,33 +3,71 @@ Parses Anki's version. Uncommment and run this directly to evaluate test cases.
 """
 
 import re
-from anki import version
+import pkgutil
 
-""" Constants (reverse chronological order) """
+import anki
 
-ANKI_VER_LATEST = 0
-ANKI_VER_PRE_2_1_41 = -1
-ANKI_VER_PRE_2_1_0 = -2
+""" Constants """
 
-""" Parsing """
+ANKI_VER_PRE_2_1_0 = 0
+ANKI_VER_PRE_2_1_41 = 1
+ANKI_VER_PRE_23_10 = 2
+ANKI_VER_LATEST = 3
 
-def _parse_anki_version(version):
+PYQT_VER_4 = 4
+PYQT_VER_5 = 5
+PYQT_VER_LATEST = 6
+
+""" Parse Anki Version """
+
+def _parse_anki_version_new():
+    """ 
+    pointVersion() is added in Anki 2.1.20 so if this gets called, by default 
+    Anki is 2.1.20 or higher.
+    """
+    point_version = anki.utils.pointVersion()
+    if point_version < 41:
+        return ANKI_VER_PRE_2_1_41
+    elif point_version < 231000:
+        return ANKI_VER_PRE_23_10
+    else:
+        return ANKI_VER_LATEST
+
+def _parse_anki_version_old():
+    """
+    This will only get called if Anki is between 2.0 and 2.1.19
+    """
     try:
+        version = anki.version
         v = tuple(map(int, re.match("(\d+)\.(\d+)\.(\d+)", version).groups()))
 
         if v[0] < 2:
             return ANKI_VER_PRE_2_1_0
         elif v[0] == 2 and v[1] < 1:
             return ANKI_VER_PRE_2_1_0
-        elif v[0] == 2 and v[1] == 1 and v[2] < 41:
-            return ANKI_VER_PRE_2_1_41
         else:
-            return ANKI_VER_LATEST
+            return ANKI_VER_PRE_2_1_41
     except:
-        return ANKI_VER_LATEST
+        return ANKI_VER_PRE_2_1_41
 
 def get_anki_version():
-    return _parse_anki_version(version)
+    has_point_version = getattr(anki.utils, 'pointVersion', None)
+    if has_point_version:
+        return _parse_anki_version_new()
+    else:
+        return _parse_anki_version(version)
+
+
+""" Obtain PyQt Version """
+
+def get_pyqt_version():
+    if pkgutil.find_loader('PyQt4'):
+        return PYQT_VER_4
+    elif pkgutil.find_loader('PyQt5'):
+        return PYQT_VER_5
+    else:
+        return PYQT_VER_LATEST
+
 
 """ Test Cases """
 

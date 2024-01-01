@@ -16,9 +16,15 @@ from aqt.qt import *
 
 from .get_version import *
 from .symbol_manager import SymbolManager
-from .Ui_SymbolWindow import Ui_SymbolWindow
 
-ANKI_VER = get_anki_version()
+PYQT_VER = get_pyqt_version()
+
+if PYQT_VER == PYQT_VER_4:
+    from .Ui_SymbolWindow_4 import Ui_SymbolWindow
+elif PYQT_VER == PYQT_VER_5:
+    from .Ui_SymbolWindow_5 import Ui_SymbolWindow
+else:
+    from .Ui_SymbolWindow_6 import Ui_SymbolWindow
 
 class SymbolWindow(QDialog):
     """
@@ -59,7 +65,7 @@ class SymbolWindow(QDialog):
 
         self.ui.tableWidget.cellClicked.connect(self.on_cell_clicked)
         h_header = self.ui.tableWidget.horizontalHeader()
-        if ANKI_VER == ANKI_VER_PRE_2_1_0:
+        if PYQT_VER == PYQT_VER_4:
             h_header.setResizeMode(0, QHeaderView.ResizeMode.Stretch)
             h_header.setResizeMode(1, QHeaderView.ResizeMode.Stretch)
         else:
@@ -407,7 +413,7 @@ class SymbolWindow(QDialog):
         is valid; otherwise, an error will be displayed and the operation
         will abort.
         """
-        if ANKI_VER == ANKI_VER_PRE_2_1_0:
+        if PYQT_VER == PYQT_VER_4:
             fname = QFileDialog.getOpenFileName(self, 'Open file', '', 
                 "CSV (*.csv)")
         else:
@@ -475,7 +481,7 @@ class SymbolWindow(QDialog):
             else:
                 return
 
-        if ANKI_VER == ANKI_VER_PRE_2_1_0:
+        if PYQT_VER == PYQT_VER_4:
             fname = QFileDialog.getSaveFileName(self, 'Save file', '', 
                 "CSV (*.csv)")
         else:

@@ -12,6 +12,7 @@ import string
 import json
 import aqt
 
+from .get_version import *
 from .default_symbols import DEFAULT_MATCHES, SPECIAL_KEYS
 
 class SymbolManager(object):
@@ -253,5 +254,8 @@ class SymbolManager(object):
         for (k, v) in self._symbols:
             query = "INSERT INTO %s VALUES (?, ?)"
             self._mw.col.db.execute(query % self.TBL_NAME, k, v)
-        self._mw.col.db.commit()
+
+        # Anki no longer requires (or supports) committing in 23.10 or later
+        if get_anki_version() <= ANKI_VER_PRE_23_10:
+            self._mw.col.db.commit()
 
