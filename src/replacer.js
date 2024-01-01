@@ -6,6 +6,9 @@
  */
 
 var insert_symbols = new function () {
+
+    const SETUP_TIMEOUT = 500;  // To prevent our code trying to add listeners before HTML is ready
+
     const KEY_SPACE = 32;
     const KEY_ENTER = 13;
 
@@ -72,23 +75,18 @@ var insert_symbols = new function () {
     // For Anki 2.1.50+
     this.addListenersV2 =  function() {
         setTimeout(() => {
-            require("anki/ui").loaded.then(() => {
-                fields = require("anki/NoteEditor").instances[0].fields
+            editorFields = document.getElementsByClassName("rich-text-editable");
 
-                for (const field of fields) {
-                    field.element.then((fieldElm) => {
-                        if (!fieldElm.hasAttribute("has-type-symbols")) {
-                            const editingArea = fieldElm.getElementsByClassName("editing-area")[0];
-                            const shadowRoot = editingArea.getElementsByClassName("rich-text-editable")[0].shadowRoot;
-
-                            shadowRoot.addEventListener("keydown", this.onKeyDown)
-                            shadowRoot.addEventListener("keyup", this.onKeyUp)
-                            fieldElm.setAttribute("has-type-symbols", "")
-                        }
-                    })
+            for (field of editorFields) {
+                if (field.shadowRoot !== undefined) {
+                    if (!field.hasAttribute("has-type-symbols")) {
+                        field.shadowRoot.addEventListener("keydown", this.onKeyDown);
+                        field.shadowRoot.addEventListener("keyup", this.onKeyUp);
+                        field.setAttribute("has-type-symbols", "");
+                    }
                 }
-            })
-        }, 20)  // To prevent our code trying to add listeners before HTML is ready  
+            }
+        }, SETUP_TIMEOUT);   
     }
 
     if (typeof forEditorField !== 'undefined') {
@@ -197,21 +195,4 @@ var insert_symbols = new function () {
         command = isHTML ? "insertHTML" : "insertText";
         document.execCommand(command, false, newText);
     }
-
-    // Debugging:
-    //----------------------------------
-
-    // $("body").append('<div class="debug1"></div>');
-    // $("body").append('<div class="debug2"></div>');
-
-    // $(".debug1").html("Debug #1");
-    // $(".debug2").html("Debug #2");
-
-    // function debugDiv1(str) {
-    //     $(".debug1").html(str);
-    // }
-
-    // function debugDiv2(str) {
-    //     $(".debug2").html(str);
-    // }
 }
