@@ -6,7 +6,7 @@ ROOT_FOLDER="$(cd "$(dirname "$0")/.." && pwd -P)"
 SRC_FOLDER="$ROOT_FOLDER/src"
 BUILD_FOLDER="$ROOT_FOLDER/build"
 
-EXCLUDES=".|..|*.ui|Ui_SymbolWindow*.py|__pycache__"
+EXCLUDES=".|..|*.ui|__pycache__"
 
 if [ -d $BUILD_FOLDER ]; then
   rm -rf $BUILD_FOLDER/*
@@ -27,8 +27,8 @@ for i in !($EXCLUDES); do
   cp $i "$BUILD_FOLDER/Anki21/$i"
 done
 
-cp Ui_SymbolWindow_4.py "$BUILD_FOLDER/Anki20/$ADDON_NAME/Ui_SymbolWindow.py"
-cp Ui_SymbolWindow.py "$BUILD_FOLDER/Anki21/Ui_SymbolWindow.py"
+#cp Ui_SymbolWindow_4.py "$BUILD_FOLDER/Anki20/$ADDON_NAME/Ui_SymbolWindow.py"
+#cp Ui_SymbolWindow.py "$BUILD_FOLDER/Anki21/Ui_SymbolWindow.py"
 cp "$ROOT_FOLDER/manifest.json" "$BUILD_FOLDER/Anki21/manifest.json"
 
 py_fname=$(echo $ADDON_NAME | tr '_' ' ' | sed 's/\b[a-z]/\u&/g')
