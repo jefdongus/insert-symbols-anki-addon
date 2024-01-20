@@ -114,7 +114,12 @@ def on_editor_load_note(editor: Editor, focusTo=None):
     _load_JS(editor.web)
 
 def on_editor_cleanup(editor: Editor):
-    ins_sym_webview_owners['editors'].remove(editor)
+    """
+    If the editor did not show any notes, on_editor_load_note() would not have
+    been called and thus the Editor will not be in ins_sym_webview_owners.
+    """
+    if editor in ins_sym_webview_owners['editors']:
+        ins_sym_webview_owners['editors'].remove(editor)
 
 def on_browser_init(browser: Browser, main_window = None, card = None, 
     search = None):
