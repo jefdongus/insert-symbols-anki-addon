@@ -135,15 +135,20 @@ def on_reviewer_initweb(reviewer: Reviewer):
     # aqt.utils.showInfo("on_reviewer_start() called")
 
 def on_reviewer_show_qa(card=None):
-    """ 
-    This event is triggered when the Reviewer shows either a question or an
-    answer. Since the Editable Fields plugin makes the fields editable when 
-    each card is created, key listeners need to be set up after each time.
     """
-    webview = ins_sym_webview_owners['reviewer'].web
+    This event is triggered when the Reviewer shows either a question or an
+    answer. Since the Editable Fields plugin makes the fields editable when
+    each card is created, key listeners need to be set up after each time.
+
+    Added null checks to prevent AttributeError when reviewer is not properly initialized.
+    """
+    reviewer = ins_sym_webview_owners.get('reviewer')
+    if reviewer is None:
+        return
+
+    webview = getattr(reviewer, 'web', None)
     if webview:
         webview.eval("insert_symbols.setupReviewerKeyEvents()")
-    # aqt.utils.showInfo("on_show_qa() called")
 
 def on_reviewer_cleanup():
     """ This event is triggered when the Reviewer is about to be closed. """
