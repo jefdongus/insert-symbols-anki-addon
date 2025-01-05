@@ -3,7 +3,7 @@
     "package": "2040501954",
     "ankiweb_id": "2040501954",
     "author": "jefdongus",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "homepage": "https://github.com/jefdongus/insert-symbols-anki-addon",
     "conflicts": [
         "insert_symbols"
