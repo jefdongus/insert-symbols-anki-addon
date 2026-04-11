@@ -95,15 +95,34 @@ var insert_symbols = new function () {
         this.addListenersV2();
     }
 
-    /**
-     * Add event handlers to Reviewer key events to extend functionality to
-     * "Edit Field During Review" plugin. This needs to be called each time
-     * a question/answer is shown since that is when fields are made editable.
-     */
-    this.setupReviewerKeyEvents = function () {
-        $("[contenteditable]").keydown(this.onKeyDown);
-        $("[contenteditable]").keyup(this.onKeyUp);
+       /**
+ * Add event handlers to Reviewer key events to extend functionality to
+ * "Edit Field During Review" plugin. This needs to be called each time
+ * a question/answer is shown since that is when fields are made editable.
+ */
+this.setupReviewerKeyEvents = function () {
+    // 1. Attach to any boxes that are already editable
+    $("[contenteditable]").off("keydown", this.onKeyDown).keydown(this.onKeyDown);
+    $("[contenteditable]").off("keyup", this.onKeyUp).keyup(this.onKeyUp);
+
+    // 2. WATCH FOR COMMAND+CLICK 
+    if (!this._cmdClickWatcher) {
+        this._cmdClickWatcher = true; // Make sure we only add this watcher once
+
+        document.addEventListener('mousedown', (evt) => {
+            // If you are holding Command (Mac) or Ctrl (Windows) when you click...
+            if (evt.metaKey || evt.ctrlKey) {
+
+                // Wait 100 milliseconds for Edit Fields to create the text box...
+                setTimeout(() => {
+                    // ...then trigger the Symbols script again to find the new box
+                    $("[contenteditable]").off("keydown", this.onKeyDown).keydown(this.onKeyDown);
+                    $("[contenteditable]").off("keyup", this.onKeyUp).keyup(this.onKeyUp);
+                }, 100);
+            }
+        });
     }
+}
 
     // Pattern Matching:
     //----------------------------------
