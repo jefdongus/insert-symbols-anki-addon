@@ -16,7 +16,8 @@ ANKI_VER_LATEST = 3
 
 PYQT_VER_4 = 4
 PYQT_VER_5 = 5
-PYQT_VER_LATEST = 6
+PYQT_VER_6 = 6
+PYQT_VER_LATEST = PYQT_VER_6
 
 """ Parse Anki Version """
 
@@ -61,10 +62,12 @@ def get_anki_version():
 """ Obtain PyQt Version """
 
 def get_pyqt_version():
-    if importlib.util.find_spec('PyQt4') is not None:
-        return PYQT_VER_4
+    if importlib.util.find_spec('PyQt6') is not None:
+        return PYQT_VER_6
     elif importlib.util.find_spec('PyQt5') is not None:
         return PYQT_VER_5
+    elif importlib.util.find_spec('PyQt4') is not None:
+        return PYQT_VER_4
     else:
         return PYQT_VER_LATEST
 
